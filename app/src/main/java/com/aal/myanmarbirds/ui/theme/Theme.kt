@@ -1,7 +1,6 @@
 package com.aal.myanmarbirds.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.material3.MaterialTheme
@@ -11,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -36,14 +37,21 @@ fun MyanmarBirdsTheme(
         SideEffect {
             val window = (view.context as Activity).window
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                window.isNavigationBarContrastEnforced = false
-            }
+            // Make status bar and navigation bar transparent
+            window.statusBarColor = Color.Transparent.toArgb()
+            window.navigationBarColor = Color.Transparent.toArgb()
+
+            // Allow content to draw behind system bars
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+
+            // Control icons
             val insetsController = WindowCompat.getInsetsController(window, view)
-            insetsController.isAppearanceLightStatusBars = !isAppearanceLightStatusBars
-            insetsController.isAppearanceLightNavigationBars = !isAppearanceLightNavigationBars
+            insetsController.isAppearanceLightStatusBars = true  // dark icons
+            insetsController.isAppearanceLightNavigationBars = true  // dark icons
         }
     }
+
+
     val lightColorScheme = lightColorScheme(
         primary = Theme.colors.blue_500,
         onPrimary = Theme.colors.white,

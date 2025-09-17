@@ -3,6 +3,8 @@ package com.aal.myanmarbirds.ui.feature.home.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -13,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aal.myanmarbirds.ui.base.EventHandler
+import com.aal.myanmarbirds.ui.feature.components.MBTopAppBar
 import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeScreenEvent
 import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeViewModel
 
@@ -24,10 +27,19 @@ fun HomeScreen(
     val state by homeViewModel.uiState.collectAsState()
 
     EventHandler(homeViewModel) { event ->
-        onEvent(event)  // forward event to NavGraph
+        onEvent(event)
     }
 
-    HomeScreenContent(onEvent = homeViewModel::onEvent)
+    Scaffold(topBar = {
+        MBTopAppBar(
+            text = "မြန်မာနိုင်ငံရှိငှက်မျိုးစိတ်များ",
+        )
+    }) { innerPadding ->
+        HomeScreenContent(
+            onEvent = homeViewModel::onEvent,
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
 }
 
 @Composable
