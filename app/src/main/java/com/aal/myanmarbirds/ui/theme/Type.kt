@@ -30,6 +30,7 @@ val openSansFamily = FontFamily(
 @Immutable
 data class MyanmarBirdsTypography(
     val Header: TextStyle = MyanmarBirdsTypographyTokens.Header,
+    val Title: TextStyle = MyanmarBirdsTypographyTokens.Title,
     val Label: TextStyle = MyanmarBirdsTypographyTokens.Label,
     val Body: TextStyle = MyanmarBirdsTypographyTokens.Body,
 
@@ -47,19 +48,26 @@ internal object MyanmarBirdsTypographyTokens {
             fontWeight = FontWeight.Normal,
             letterSpacing = 1.sp
         )
-
+    val Title
+        get() = TextStyle(
+            fontSize = 20.sp,
+            lineHeight = TextUnit((20 * (157 / 100)).toFloat(), TextUnitType.Sp),
+            fontFamily = openSansFamily,
+            color = MyanmarBirdsColor.current.gray_800,
+            fontWeight = FontWeight.SemiBold
+        )
     val Label
         get() = TextStyle(
-            fontSize = 14.sp,
-            lineHeight = TextUnit((14 * (157 / 100)).toFloat(), TextUnitType.Sp),
+            fontSize = 16.sp,
+            lineHeight = TextUnit((16 * (157 / 100)).toFloat(), TextUnitType.Sp),
             fontFamily = openSansFamily,
             color = MyanmarBirdsColor.current.gray_800,
             fontWeight = FontWeight.SemiBold
         )
     val Body
         get() = TextStyle(
-            fontSize = 16.sp,
-            lineHeight = 16.sp,
+            fontSize = 14.sp,
+            lineHeight = 14.sp,
             fontFamily = openSansFamily,
             color = MyanmarBirdsColor.current.white,
             fontWeight = FontWeight.Normal
