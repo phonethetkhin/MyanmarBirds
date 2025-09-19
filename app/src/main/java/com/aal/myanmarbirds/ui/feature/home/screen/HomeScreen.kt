@@ -1,12 +1,16 @@
 package com.aal.myanmarbirds.ui.feature.home.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -17,6 +21,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aal.myanmarbirds.R
@@ -154,59 +160,79 @@ fun HomeScreenContent(
         },
         floatingActionButton = {
             MemoButton(onClick = onMemoClick)
-        }
+        },
+        containerColor = Color.Gray.copy(0.2f)
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
-            Spacer(modifier = Modifier.height(20.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Column(
+                modifier = Modifier.background(color = Color.White)
 
-            // Search Mode Segmented Picker
-            SegmentedSearchModePicker(
-                selectedMode = selectedSearchMode,
-                onModeSelected = { selectedSearchMode = it }
-            )
+            ) {
+                Spacer(modifier = Modifier.height(20.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+                // Search Mode Segmented Picker
+                SegmentedSearchModePicker(
+                    selectedMode = selectedSearchMode,
+                    onModeSelected = { selectedSearchMode = it }
+                )
 
-            // Search options
-            when (selectedSearchMode) {
-                SearchMode.NAME -> {
-                    OutlinedTextField(
-                        value = searchText,
-                        onValueChange = { searchText = it },
-                        placeholder = { Text("အမည်နှင့်ရှာဖွေပါ🔍") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Search options
+                when (selectedSearchMode) {
+                    SearchMode.NAME -> {
+                        OutlinedTextField(
+                            value = searchText,
+                            onValueChange = { searchText = it },
+                            placeholder = { Text("အမည်နှင့်ရှာဖွေပါ🔍") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        )
+                    }
+
+                    SearchMode.BODY -> {
+                        HorizontalColorSelector(
+                            title = "ခန္ဓာကိုယ်အရောင်ကိုရွေးပါ။",
+                            colors = BodyColors.entries.map { it.display },
+                            selectedColor = selectedBodyColor,
+                            onColorSelected = { selectedBodyColor = it }
+                        )
+                    }
+
+                    SearchMode.HEAD -> {
+                        HorizontalColorSelector(
+                            title = "ဦးခေါင်းပိုင်းအရောင်ကိုရွေးပါ",
+                            colors = HeadColors.entries.map { it.display },
+                            selectedColor = selectedHeadColor,
+                            onColorSelected = { selectedHeadColor = it }
+                        )
+                    }
                 }
 
-                SearchMode.BODY -> {
-                    HorizontalColorSelector(
-                        title = "ခန္ဓာကိုယ်အရောင်ကိုရွေးပါ။",
-                        colors = BodyColors.entries.map { it.display },
-                        selectedColor = selectedBodyColor,
-                        onColorSelected = { selectedBodyColor = it }
-                    )
-                }
+                Spacer(modifier = Modifier.height(16.dp))
 
-                SearchMode.HEAD -> {
-                    HorizontalColorSelector(
-                        title = "ဦးခေါင်းပိုင်းအရောင်ကိုရွေးပါ",
-                        colors = HeadColors.entries.map { it.display },
-                        selectedColor = selectedHeadColor,
-                        onColorSelected = { selectedHeadColor = it }
-                    )
-                }
+
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             // Bird List
-            LazyColumn {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp, vertical = 32.dp)
+                    .clip(RoundedCornerShape(8.dp))   // first clip
+                    .background(Color.White),
+                contentPadding = PaddingValues(16.dp)
+            ) {
                 items(filteredBirds) { bird ->
                     BirdListItem(bird = bird, onClick = { navigateToBirdDetail(bird) })
+                    Spacer(modifier = Modifier.height(16.dp))
+
                 }
             }
+
         }
     }
 
