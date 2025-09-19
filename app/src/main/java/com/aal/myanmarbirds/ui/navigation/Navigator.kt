@@ -6,7 +6,7 @@ import androidx.navigation.NavController
 
 interface Navigator {
     fun navigateUp()
-    fun navigateToHome()
+    fun navigateToDetail(birdJsonString: String)
 
 }
 

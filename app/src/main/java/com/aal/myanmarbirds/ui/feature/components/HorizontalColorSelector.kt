@@ -27,7 +27,12 @@ fun HorizontalColorSelector(
     onColorSelected: (String) -> Unit
 ) {
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
-        Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp))
+        Text(
+            title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 16.dp)
+        )
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -37,19 +42,28 @@ fun HorizontalColorSelector(
                 Button(
                     onClick = { onColorSelected("") },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (selectedColor.isEmpty()) Color.Blue.copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.2f)
+                        containerColor = if (selectedColor.isEmpty()) Color.Blue.copy(alpha = 0.2f) else Color.Gray.copy(
+                            alpha = 0.2f
+                        )
                     ),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(8.dp)
                 ) {
-                    Text("အားလုံး", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        "အားလုံး",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black
+                    )
                 }
             }
             items(colors) { color ->
                 Button(
                     onClick = { onColorSelected(color) },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (selectedColor == color) Color.Blue.copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.2f)
+                        containerColor = if (selectedColor == color) Color.Blue.copy(alpha = 0.2f) else Color.Gray.copy(
+                            alpha = 0.2f
+                        )
                     ),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(8.dp)

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -22,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import com.aal.myanmarbirds.R
 import com.aal.myanmarbirds.data.model.Bird
 
@@ -30,26 +32,28 @@ fun BirdListItem(bird: Bird, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val imageModifier = Modifier
-            .clip(CircleShape)
-            .size(50.dp)
 
         // Bird image
         if (bird.imageNames.isNotEmpty()) {
             Image(
-                painter = painterResource(id = bird.imageNames.first()),
+                painter = rememberAsyncImagePainter(bird.imageNames.first()),
                 contentDescription = bird.name,
-                modifier = imageModifier,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
         } else {
             Image(
-                painter = painterResource(id = R.drawable.placeholder),
-                contentDescription = "Placeholder",
-                modifier = imageModifier,
+                painter = rememberAsyncImagePainter(R.drawable.placeholder),
+                contentDescription = bird.name,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
         }

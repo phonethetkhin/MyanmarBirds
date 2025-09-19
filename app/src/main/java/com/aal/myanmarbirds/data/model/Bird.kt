@@ -1,13 +1,20 @@
 package com.aal.myanmarbirds.data.model
 
-import java.util.UUID
+import com.aal.myanmarbirds.R
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Bird(
-    val id: String = UUID.randomUUID().toString(),
-    val name: String,
-    val englishName: String,
-    val japaneseName: String,
-    val body: String,
-    val head: String,
-    val imageNames: List<Int> // Use resource IDs (R.drawable.xxx) for images
+    val id: String = "",
+    val name: String = "",
+    val englishName: String = "",
+    val japaneseName: String = "",
+    val order: String = "",
+    val family: String = "",
+    val body: String = "",
+    val head: String = "",
+    val scientificName: String = "",
+    val description: String = "",
+    val imageNames: List<Int> = emptyList(),
+    val audioResId: Int = R.raw.bird_audio
 )

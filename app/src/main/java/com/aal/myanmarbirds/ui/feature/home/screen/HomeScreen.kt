@@ -1,6 +1,7 @@
 package com.aal.myanmarbirds.ui.feature.home.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -20,13 +21,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.aal.myanmarbirds.R
-import com.aal.myanmarbirds.data.model.Bird
 import com.aal.myanmarbirds.ui.base.EventHandler
 import com.aal.myanmarbirds.ui.feature.components.BirdListItem
 import com.aal.myanmarbirds.ui.feature.components.BodyColors
@@ -37,50 +38,10 @@ import com.aal.myanmarbirds.ui.feature.components.MemoButton
 import com.aal.myanmarbirds.ui.feature.components.SearchMode
 import com.aal.myanmarbirds.ui.feature.components.SegmentedSearchModePicker
 import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeScreenEvent
+import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeScreenState
 import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeViewModel
-
-val sampleBirds = listOf(
-    Bird(
-        name = "မြင်းပျိုးငှက်",
-        englishName = "Sunbird",
-        japaneseName = "スンバード",
-        body = BodyColors.YELLOW.display,
-        head = HeadColors.BLUE.display,
-        imageNames = listOf(R.drawable.eurasian_hoopoe_1, R.drawable.eurasian_hoopoe_2)
-    ),
-    Bird(
-        name = "ကောင်ကောင်ငှက်",
-        englishName = "Kingfisher",
-        japaneseName = "カワセミ",
-        body = BodyColors.BLUE.display,
-        head = HeadColors.BLUE.display,
-        imageNames = listOf(R.drawable.large_billed_crow_1)
-    ),
-    Bird(
-        name = "ပန်းရောင်ငှက်",
-        englishName = "Rosefinch",
-        japaneseName = "ウソ",
-        body = BodyColors.RED.display,
-        head = HeadColors.RED.display,
-        imageNames = listOf(R.drawable.large_billed_crow_2)
-    ),
-    Bird(
-        name = "နက်နက်ငှက်",
-        englishName = "Crow",
-        japaneseName = "カラス",
-        body = BodyColors.BLACK.display,
-        head = HeadColors.BLACK.display,
-        imageNames = listOf(R.drawable.large_billed_crow_3)
-    ),
-    Bird(
-        name = "အဖြူငှက်",
-        englishName = "White Bird",
-        japaneseName = "白い鳥",
-        body = BodyColors.WHITE.display,
-        head = HeadColors.WHITE.display,
-        imageNames = listOf(R.drawable.rock_dove_1)
-    )
-)
+import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
+import com.google.gson.Gson
 
 
 @Composable
@@ -95,6 +56,7 @@ fun HomeScreen(
     }
 
     Scaffold(
+        containerColor = Color.Gray.copy(0.2f),
         topBar = {
             MBTopAppBar(
                 text = "မြန်မာနိုင်ငံရှိငှက်မျိုးစိတ်များ",
@@ -108,10 +70,7 @@ fun HomeScreen(
             }
         }) { innerPadding ->
         HomeScreenContent(
-            birds = sampleBirds,
-            onLightbulbClick = {},
-            onMemoClick = {},
-            navigateToBirdDetail = {},
+            state = state,
             onEvent = homeViewModel::onEvent,
             modifier = Modifier.padding(innerPadding)
         )
@@ -120,105 +79,66 @@ fun HomeScreen(
 
 @Composable
 fun HomeScreenContent(
-    birds: List<Bird>,
-    onLightbulbClick: () -> Unit,
-    onMemoClick: () -> Unit,
-    navigateToBirdDetail: (Bird) -> Unit,
+    state: HomeScreenState,
     onEvent: (HomeScreenEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isShowingOnboarding by remember { mutableStateOf(false) }
-    var selectedSearchMode by remember { mutableStateOf(SearchMode.NAME) }
-    var searchText by remember { mutableStateOf("") }
-    var selectedBodyColor by remember { mutableStateOf("") }
-    var selectedHeadColor by remember { mutableStateOf("") }
 
-    // Filtered list
-    val filteredBirds = birds.filter { bird ->
-        when (selectedSearchMode) {
-            SearchMode.NAME ->
-                searchText.isEmpty() ||
-                        bird.name.contains(searchText, ignoreCase = true) ||
-                        bird.englishName.contains(searchText, ignoreCase = true) ||
-                        bird.japaneseName.contains(searchText, ignoreCase = true)
-
-            SearchMode.BODY ->
-                selectedBodyColor.isEmpty() || bird.body == selectedBodyColor
-
-            SearchMode.HEAD ->
-                selectedHeadColor.isEmpty() || bird.head == selectedHeadColor
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            MBTopAppBar(
-                text = "မြန်မာနိုင်ငံရှိ ငှက်မျိုးစိတ်များ",
-                onLightbulbClick = { isShowingOnboarding = true },
-                onMemoClick = onMemoClick
-            )
-        },
-        floatingActionButton = {
-            MemoButton(onClick = onMemoClick)
-        },
-        containerColor = Color.Gray.copy(0.2f)
-    ) { innerPadding ->
+    Column(
+        modifier = modifier
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.background(color = Color.White)
+
         ) {
-            Column(
-                modifier = Modifier.background(color = Color.White)
+            Spacer(modifier = Modifier.height(20.dp))
 
-            ) {
-                Spacer(modifier = Modifier.height(20.dp))
+            // Search Mode Segmented Picker
+            SegmentedSearchModePicker(
+                selectedMode = state.searchMode,
+                onModeSelected = { onEvent(HomeScreenEvent.UpdateSearchMode(it)) }
+            )
 
-                // Search Mode Segmented Picker
-                SegmentedSearchModePicker(
-                    selectedMode = selectedSearchMode,
-                    onModeSelected = { selectedSearchMode = it }
-                )
+            Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Search options
-                when (selectedSearchMode) {
-                    SearchMode.NAME -> {
-                        OutlinedTextField(
-                            value = searchText,
-                            onValueChange = { searchText = it },
-                            placeholder = { Text("အမည်နှင့်ရှာဖွေပါ🔍") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                        )
-                    }
-
-                    SearchMode.BODY -> {
-                        HorizontalColorSelector(
-                            title = "ခန္ဓာကိုယ်အရောင်ကိုရွေးပါ။",
-                            colors = BodyColors.entries.map { it.display },
-                            selectedColor = selectedBodyColor,
-                            onColorSelected = { selectedBodyColor = it }
-                        )
-                    }
-
-                    SearchMode.HEAD -> {
-                        HorizontalColorSelector(
-                            title = "ဦးခေါင်းပိုင်းအရောင်ကိုရွေးပါ",
-                            colors = HeadColors.entries.map { it.display },
-                            selectedColor = selectedHeadColor,
-                            onColorSelected = { selectedHeadColor = it }
-                        )
-                    }
+            // Search options
+            when (state.searchMode) {
+                SearchMode.NAME -> {
+                    OutlinedTextField(
+                        value = state.searchText,
+                        onValueChange = { onEvent(HomeScreenEvent.UpdateSearchText(it)) },
+                        placeholder = { Text("အမည်နှင့်ရှာဖွေပါ🔍") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                SearchMode.BODY -> {
+                    HorizontalColorSelector(
+                        title = "ခန္ဓာကိုယ်အရောင်ကိုရွေးပါ။",
+                        colors = BodyColors.entries.map { it.display },
+                        selectedColor = state.selectedBodyColor,
+                        onColorSelected = { onEvent(HomeScreenEvent.UpdateBodyColor(it)) }
+                    )
+                }
 
-
+                SearchMode.HEAD -> {
+                    HorizontalColorSelector(
+                        title = "ဦးခေါင်းပိုင်းအရောင်ကိုရွေးပါ",
+                        colors = HeadColors.entries.map { it.display },
+                        selectedColor = state.selectedHeadColor,
+                        onColorSelected = { onEvent(HomeScreenEvent.UpdateHeadColor(it)) }
+                    )
+                }
             }
-            // Bird List
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+        }
+        if (state.filteredItems.isNotEmpty()) {
             LazyColumn(
                 modifier = Modifier
                     .padding(horizontal = 24.dp, vertical = 32.dp)
@@ -226,18 +146,46 @@ fun HomeScreenContent(
                     .background(Color.White),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(filteredBirds) { bird ->
-                    BirdListItem(bird = bird, onClick = { navigateToBirdDetail(bird) })
+                items(state.filteredItems) { bird ->
+                    BirdListItem(bird = bird, onClick = {
+                        val gson = Gson()
+                        val birdJson = gson.toJson(bird)
+
+                        onEvent(
+                            HomeScreenEvent.NavigateToDetail(
+                                birdJson
+                            )
+                        )
+                    })
                     Spacer(modifier = Modifier.height(16.dp))
 
                 }
             }
-
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("မည်သည့် ငှက်မျိုးစိတ်မှ မတွေ့ပါ 😢")
+            }
         }
     }
 
 //    if (isShowingOnboarding) {
 //        OnboardingDialog(onDismiss = { isShowingOnboarding = false })
 //    }
+}
+
+@Preview
+@Composable
+private fun HomeScreenContentPreview() {
+    MyanmarBirdPreview {
+        HomeScreenContent(
+            state = HomeScreenState(),
+            onEvent = {})
+    }
 }
 

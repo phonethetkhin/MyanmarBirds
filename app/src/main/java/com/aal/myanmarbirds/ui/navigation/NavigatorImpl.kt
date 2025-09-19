@@ -7,8 +7,8 @@ class NavigatorImpl(private val navController: NavController) : Navigator {
         navController.navigateUp()
     }
 
-    override fun navigateToHome() {
-        navController.navigate(Destinations.Home)
+    override fun navigateToDetail(birdJsonString: String) {
+        navController.navigate(Destinations.Detail(birdJsonString = birdJsonString))
     }
 
 

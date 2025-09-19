@@ -71,6 +71,12 @@ dependencies {
     // Hilt Navigation for Compose
     implementation(libs.androidx.hilt.navigation.compose)
 
+    //Coil
+    implementation(libs.coil.compose)
+
+
+    //Gson
+    implementation(libs.gson)
 
     //Room
     implementation(libs.room.runtime)

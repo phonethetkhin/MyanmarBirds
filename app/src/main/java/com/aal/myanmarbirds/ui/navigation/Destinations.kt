@@ -10,5 +10,8 @@ sealed interface Destinations {
     @Serializable
     data object Home : Destinations
 
+    @Serializable
+    data class Detail(val birdJsonString: String) : Destinations
+
 
 }
