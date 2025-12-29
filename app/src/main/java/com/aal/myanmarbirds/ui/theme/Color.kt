@@ -112,6 +112,7 @@ data class MyanmarBirdsColor(
 
 
     val backarrow_blue: Color = Color(0xFF10247A),
+    val play_green: Color = Color(0xFF2B8C84),
 
 
     ) {

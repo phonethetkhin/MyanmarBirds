@@ -2,12 +2,8 @@
 
 package com.aal.myanmarbirds.ui.feature.detail.screen
 
-import android.util.Log
+import AudioPlayer
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,23 +21,26 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -57,7 +56,8 @@ import com.aal.myanmarbirds.ui.feature.components.MBTopAppBar
 import com.aal.myanmarbirds.ui.feature.components.PagerIndicator
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailScreenEvent
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailViewModel
-import com.aal.myanmarbirds.util.AudioPlayer
+import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
+import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
 import com.google.gson.Gson
 
 
@@ -111,7 +111,9 @@ fun DetailScreenContent(
         onDispose { audioPlayer.release() }
     }
 
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState())
+    ) {
 
         /* ---------------- IMAGE PAGER ---------------- */
 
@@ -133,7 +135,7 @@ fun DetailScreenContent(
             Surface(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(16.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 AsyncImage(
@@ -158,11 +160,11 @@ fun DetailScreenContent(
 
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
+
                 .padding(bottom = 16.dp)
         ) {
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             AudioPlayerUI(audioPlayer)
 
@@ -219,54 +221,101 @@ fun InfoRow(
 }
 
 /* ---------------- AUDIO UI ---------------- */
-
 @Composable
 fun AudioPlayerUI(audioPlayer: AudioPlayer) {
     val isPlaying by audioPlayer.isPlaying.collectAsState()
     val currentTime by audioPlayer.currentTime.collectAsState()
     val duration by audioPlayer.duration.collectAsState()
+    val buffering by audioPlayer.buffering.collectAsState()
+
+    // Use rememberSaveable to survive configuration changes
+    var sliderPosition by rememberSaveable { mutableFloatStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+
+    // Optimized time sync - update less frequently
+    LaunchedEffect(currentTime, isDragging) {
+        if (!isDragging && duration > 0) {
+            // Batch updates to reduce recompositions
+            sliderPosition = currentTime.toFloat()
+        }
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
+        // Buffering indicator
+        if (buffering) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = MyanmarBirdsColor.current.play_green
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(
                 onClick = {
-                    if (isPlaying) {
-                        audioPlayer.pauseAudio()
-                    } else {
-                        audioPlayer.playAudio()
-                    }
-                }
+                    if (isPlaying) audioPlayer.pauseAudio()
+                    else audioPlayer.playAudio()
+                },
+                enabled = !buffering
             ) {
                 Icon(
                     painter = painterResource(
-                        if (isPlaying) {
-                            R.drawable.outline_pause_circle_24
-                        } else {
-                            R.drawable.outline_play_circle_24
-                        }
+                        if (isPlaying) R.drawable.pause_circle_svgrepo_com
+                        else R.drawable.play_circle_svgrepo_com
                     ),
-                    contentDescription = null,
+                    tint = if (buffering) Color.Gray else MyanmarBirdsColor.current.play_green,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
                     modifier = Modifier.size(40.dp)
                 )
             }
 
             Spacer(modifier = Modifier.width(8.dp))
-            Text(formatTime(currentTime), color = Color.Gray)
+
+            Text(
+                formatTime(if (isDragging) sliderPosition.toLong() else currentTime),
+                style = MyanmarBirdsTypographyTokens.Body.copy(
+                    color = MyanmarBirdsColor.current.black
+                )
+            )
+
             Spacer(modifier = Modifier.weight(1f))
-            Text(formatTime(duration), color = Color.Gray)
+
+            Text(
+                formatTime(duration),
+                style = MyanmarBirdsTypographyTokens.Body.copy(
+                    color = MyanmarBirdsColor.current.black
+                )
+            )
+        }
+
+        // Use derivedStateOf for performance
+        val sliderValue by remember(sliderPosition, duration) {
+            derivedStateOf {
+                if (duration > 0) sliderPosition.coerceIn(0f, duration.toFloat())
+                else 0f
+            }
         }
 
         Slider(
-            value = currentTime.toFloat(),
+            value = sliderValue,
+            valueRange = 0f..maxOf(1f, duration.toFloat()),
             onValueChange = {
-                audioPlayer.seekToTime(it.toLong())
+                isDragging = true
+                sliderPosition = it
             },
-            valueRange = 0f..duration.toFloat()
+            onValueChangeFinished = {
+                isDragging = false
+                audioPlayer.seekToTime(sliderPosition.toLong())
+            },
+            colors = SliderDefaults.colors(
+                thumbColor = Color.Red,
+                activeTrackColor = MyanmarBirdsColor.current.play_green,
+                inactiveTrackColor = Color.Gray
+            ),
+            enabled = !buffering
         )
     }
 }
-
-/* ---------------- TIME FORMAT ---------------- */
 
 fun formatTime(timeMs: Long): String {
     val totalSeconds = timeMs / 1000

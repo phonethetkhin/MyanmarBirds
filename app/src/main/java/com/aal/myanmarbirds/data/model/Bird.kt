@@ -16,5 +16,5 @@ data class Bird(
     val scientificName: String = "",
     val description: String = "",
     val imageNames: List<Int> = emptyList(),
-    val audioResId: Int = R.raw.bird_audio
+    val audioResId: Int = R.raw.anser_indicus
 )

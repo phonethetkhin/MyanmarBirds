@@ -27,7 +27,7 @@ val sampleBirds = listOf(
         body = BodyColors.YELLOW.display,
         head = HeadColors.BLUE.display,
         imageNames = listOf(R.drawable.eurasian_hoopoe_1, R.drawable.eurasian_hoopoe_2),
-        audioResId = R.raw.bird_audio
+        audioResId = R.raw.anser_indicus
     ),
     Bird(
         id = "2",
@@ -41,7 +41,7 @@ val sampleBirds = listOf(
         body = BodyColors.BLUE.display,
         head = HeadColors.BLUE.display,
         imageNames = listOf(R.drawable.large_billed_crow_1),
-        audioResId = R.raw.bird_audio
+        audioResId = R.raw.anser_indicus
     ),
     Bird(
         id = "3",
@@ -55,7 +55,7 @@ val sampleBirds = listOf(
         body = BodyColors.RED.display,
         head = HeadColors.RED.display,
         imageNames = listOf(R.drawable.large_billed_crow_2),
-        audioResId = R.raw.bird_audio
+        audioResId = R.raw.anser_indicus
     ),
     Bird(
         id = "4",
@@ -69,7 +69,7 @@ val sampleBirds = listOf(
         body = BodyColors.BLACK.display,
         head = HeadColors.BLACK.display,
         imageNames = listOf(R.drawable.large_billed_crow_3),
-        audioResId = R.raw.bird_audio
+        audioResId = R.raw.anser_indicus
     ),
     Bird(
         id = "5",
@@ -83,7 +83,7 @@ val sampleBirds = listOf(
         body = BodyColors.WHITE.display,
         head = HeadColors.WHITE.display,
         imageNames = listOf(R.drawable.rock_dove_1),
-        audioResId = R.raw.bird_audio
+        audioResId = R.raw.anser_indicus
     )
 )
 
