@@ -1,7 +1,13 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package com.aal.myanmarbirds.ui.feature.detail.screen
 
+import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,12 +20,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -30,24 +38,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.aal.myanmarbirds.R
 import com.aal.myanmarbirds.data.model.Bird
 import com.aal.myanmarbirds.ui.base.EventHandler
 import com.aal.myanmarbirds.ui.feature.components.MBTopAppBar
+import com.aal.myanmarbirds.ui.feature.components.PagerIndicator
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailScreenEvent
-import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailScreenState
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailViewModel
-import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
 import com.aal.myanmarbirds.util.AudioPlayer
 import com.google.gson.Gson
 
@@ -63,22 +72,23 @@ fun DetailScreen(
     EventHandler(detailViewModel) { event ->
         onEvent(event)
     }
-    val gson = Gson()
-    val bird: Bird = gson.fromJson(birdJsonString, Bird::class.java)
+
+    val bird: Bird = remember {
+        Gson().fromJson(birdJsonString, Bird::class.java)
+    }
 
     Scaffold(
         containerColor = Color.Gray.copy(0.2f),
         topBar = {
             MBTopAppBar(
-                text = "မြန်မာနိုင်ငံရှိငှက်မျိုးစိတ်များ",
+                text = "ဘဲကျားလေး",
                 onLightbulbClick = {},
                 onMemoClick = {}
             )
-        },
+        }
     ) { innerPadding ->
         DetailScreenContent(
             bird = bird,
-            onEvent = detailViewModel::onEvent,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -89,88 +99,126 @@ fun DetailScreen(
 @Composable
 fun DetailScreenContent(
     bird: Bird,
-    onEvent: (DetailScreenEvent) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
 
-    val audioPlayer = remember { AudioPlayer(context, bird.audioResId) }
+    val audioPlayer = remember {
+        AudioPlayer(context, bird.audioResId)
+    }
 
     DisposableEffect(Unit) {
         onDispose { audioPlayer.release() }
     }
 
-    var currentScale by remember { mutableStateOf(1f) }
+    Column(modifier = modifier) {
 
-    Column(
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 16.dp)
-    ) {
-        val pagerState = rememberPagerState(pageCount = { bird.imageNames.size })
+        /* ---------------- IMAGE PAGER ---------------- */
 
-        // Image pager
+        val pagerState = rememberPagerState(
+            pageCount = { bird.imageNames.size }
+        )
+
+        var currentScale by remember { mutableStateOf(1f) }
+
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(300.dp),
+            beyondViewportPageCount = 1,
+            overscrollEffect = null
         ) { page ->
-            val imageRes = bird.imageNames[page]
-            Image(
-                painter = painterResource(imageRes),
-                contentDescription = bird.name,
+
+            Surface(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(8.dp)
-                    .graphicsLayer {
-                        scaleX = currentScale
-                        scaleY = currentScale
-                    }
-                    .pointerInput(Unit) {
-                        detectTransformGestures { _, _, zoom, _ ->
-                            currentScale = (currentScale * zoom).coerceIn(1f, 3f)
-                        }
-                    }
-            )
+                    .padding(24.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                AsyncImage(
+                    model = bird.imageNames[page],
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // Audio UI
-        AudioPlayerUI(audioPlayer = audioPlayer)
 
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Bird info
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            InfoRow(label = "မျိုးစဥ်(order):", value = bird.order)
-            InfoRow(label = "မျိုးရင်း(family):", value = bird.family)
-            InfoRow(label = "သိပ္ပံအမည်:", value = bird.scientificName, italic = true)
-            InfoRow(label = "အင်္ဂလိပ်အမည်:", value = bird.englishName)
-            InfoRow(label = "ဂျပန်အမည်:", value = bird.japaneseName)
-        }
+        PagerIndicator(
+            pageCount = bird.imageNames.size,
+            currentPage = pagerState.currentPage
+        )
 
-        HorizontalDivider()
+        /* ---------------- SCROLLABLE CONTENT ---------------- */
 
-        // Description
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text("အကြောင်းအရာများ", fontWeight = FontWeight.Bold, color = Color.Gray)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(bird.description)
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 16.dp)
+        ) {
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AudioPlayerUI(audioPlayer)
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                InfoRow("မျိုးစဥ်(order):", bird.order)
+                InfoRow("မျိုးရင်း(family):", bird.family)
+                InfoRow(
+                    "သိပ္ပံအမည်:",
+                    bird.scientificName,
+                    italic = true
+                )
+                InfoRow("အင်္ဂလိပ်အမည်:", bird.englishName)
+                InfoRow("ဂျပန်အမည်:", bird.japaneseName)
+            }
+
+            HorizontalDivider()
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    "အကြောင်းအရာများ",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(bird.description)
+            }
         }
     }
 }
+
+/* ---------------- INFO ROW ---------------- */
 
 @Composable
-fun InfoRow(label: String, value: String, italic: Boolean = false) {
+fun InfoRow(
+    label: String,
+    value: String,
+    italic: Boolean = false
+) {
     Row(modifier = Modifier.padding(vertical = 2.dp)) {
-        Text(label, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text(
+            label,
+            color = Color.Gray,
+            fontWeight = FontWeight.Bold
+        )
         Spacer(modifier = Modifier.width(4.dp))
-        Text(value, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal)
+        Text(
+            value,
+            fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal
+        )
     }
 }
+
+/* ---------------- AUDIO UI ---------------- */
 
 @Composable
 fun AudioPlayerUI(audioPlayer: AudioPlayer) {
@@ -180,12 +228,24 @@ fun AudioPlayerUI(audioPlayer: AudioPlayer) {
 
     Column(modifier = Modifier.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = {
-                if (isPlaying) audioPlayer.pauseAudio() else audioPlayer.playAudio()
-            }) {
+            IconButton(
+                onClick = {
+                    if (isPlaying) {
+                        audioPlayer.pauseAudio()
+                    } else {
+                        audioPlayer.playAudio()
+                    }
+                }
+            ) {
                 Icon(
-                    painter = painterResource(if (isPlaying) R.drawable.outline_pause_circle_24 else R.drawable.outline_play_circle_24),
-                    contentDescription = "Play/Pause",
+                    painter = painterResource(
+                        if (isPlaying) {
+                            R.drawable.outline_pause_circle_24
+                        } else {
+                            R.drawable.outline_play_circle_24
+                        }
+                    ),
+                    contentDescription = null,
                     modifier = Modifier.size(40.dp)
                 )
             }
@@ -198,11 +258,15 @@ fun AudioPlayerUI(audioPlayer: AudioPlayer) {
 
         Slider(
             value = currentTime.toFloat(),
-            onValueChange = { audioPlayer.seekToTime(it.toLong()) },
+            onValueChange = {
+                audioPlayer.seekToTime(it.toLong())
+            },
             valueRange = 0f..duration.toFloat()
         )
     }
 }
+
+/* ---------------- TIME FORMAT ---------------- */
 
 fun formatTime(timeMs: Long): String {
     val totalSeconds = timeMs / 1000
@@ -210,15 +274,3 @@ fun formatTime(timeMs: Long): String {
     val seconds = totalSeconds % 60
     return String.format("%02d:%02d", minutes, seconds)
 }
-
-
-@Preview
-@Composable
-private fun HomeScreenContentPreview() {
-    MyanmarBirdPreview {
-        DetailScreenContent(
-            bird = Bird(),
-            onEvent = {})
-    }
-}
-

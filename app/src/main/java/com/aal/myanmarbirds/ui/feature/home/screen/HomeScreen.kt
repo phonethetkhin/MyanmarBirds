@@ -61,7 +61,8 @@ fun HomeScreen(
             MBTopAppBar(
                 text = "မြန်မာနိုင်ငံရှိငှက်မျိုးစိတ်များ",
                 onLightbulbClick = {},
-                onMemoClick = {}
+                onMemoClick = {},
+                isHomeScreen = true,
             )
         },
         floatingActionButton = {

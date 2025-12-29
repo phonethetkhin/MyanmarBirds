@@ -111,6 +111,9 @@ data class MyanmarBirdsColor(
     val info_900: Color = Color(0xFF194185),
 
 
+    val backarrow_blue: Color = Color(0xFF10247A),
+
+
     ) {
     companion object {
         val current = MyanmarBirdsColor()
