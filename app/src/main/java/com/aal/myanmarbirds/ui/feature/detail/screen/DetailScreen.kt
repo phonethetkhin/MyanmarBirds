@@ -1,9 +1,10 @@
-@file:OptIn(ExperimentalFoundationApi::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 
 package com.aal.myanmarbirds.ui.feature.detail.screen
 
-import AudioPlayer
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,12 +17,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -29,7 +31,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -44,7 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -58,6 +59,7 @@ import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailScreenEvent
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailViewModel
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
+import com.aal.myanmarbirds.util.AudioPlayer
 import com.google.gson.Gson
 
 
@@ -78,7 +80,6 @@ fun DetailScreen(
     }
 
     Scaffold(
-        containerColor = Color.Gray.copy(0.2f),
         topBar = {
             MBTopAppBar(
                 text = "ဘဲကျားလေး",
@@ -147,10 +148,6 @@ fun DetailScreenContent(
             }
         }
 
-
-
-        Spacer(modifier = Modifier.height(8.dp))
-
         PagerIndicator(
             pageCount = bird.imageNames.size,
             currentPage = pagerState.currentPage
@@ -164,35 +161,71 @@ fun DetailScreenContent(
                 .padding(bottom = 16.dp)
         ) {
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             AudioPlayerUI(audioPlayer)
-
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider()
+
+            HorizontalDivider(color = MyanmarBirdsColor.current.divider_gray)
 
             Column(modifier = Modifier.padding(16.dp)) {
-                InfoRow("မျိုးစဥ်(order):", bird.order)
-                InfoRow("မျိုးရင်း(family):", bird.family)
                 InfoRow(
-                    "သိပ္ပံအမည်:",
-                    bird.scientificName,
-                    italic = true
+                    label = "မျိုးစဥ်(order):",
+                    value = bird.order,
+                    textStyle = MyanmarBirdsTypographyTokens.Body.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MyanmarBirdsColor.current.text_yellow
+                    )
                 )
-                InfoRow("အင်္ဂလိပ်အမည်:", bird.englishName)
-                InfoRow("ဂျပန်အမည်:", bird.japaneseName)
+                InfoRow(
+                    label = "မျိုးရင်း(family):",
+                    value = bird.family,
+                    textStyle = MyanmarBirdsTypographyTokens.Body.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MyanmarBirdsColor.current.text_yellow
+                    )
+                )
+                InfoRow(
+                    label = "သိပ္ပံအမည်:",
+                    value = bird.scientificName,
+                    textStyle = MyanmarBirdsTypographyTokens.Body.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MyanmarBirdsColor.current.black
+                    )
+                )
+                InfoRow(
+                    label = "အင်္ဂလိပ်အမည်:",
+                    value = bird.englishName,
+                    textStyle = MyanmarBirdsTypographyTokens.Body.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MyanmarBirdsColor.current.black
+                    )
+                )
+                InfoRow(
+                    label = "ဂျပန်အမည်:",
+                    value = bird.japaneseName,
+                    textStyle = MyanmarBirdsTypographyTokens.Body.copy(
+                        color = MyanmarBirdsColor.current.gray_800
+                    )
+                )
             }
 
-            HorizontalDivider()
+            HorizontalDivider(color = MyanmarBirdsColor.current.divider_gray)
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    "အကြောင်းအရာများ",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Gray
+                    text = "အကြောင်းအရာများ",
+                    style = MyanmarBirdsTypographyTokens.Body.copy(
+                        color = MyanmarBirdsColor.current.gray_800,
+                        fontWeight = FontWeight.Bold
+                    )
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(bird.description)
+                Text(
+                    text = bird.description,
+                    style = MyanmarBirdsTypographyTokens.Body.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MyanmarBirdsColor.current.black
+                    )
+                )
             }
         }
     }
@@ -204,18 +237,20 @@ fun DetailScreenContent(
 fun InfoRow(
     label: String,
     value: String,
-    italic: Boolean = false
+    textStyle: TextStyle
 ) {
     Row(modifier = Modifier.padding(vertical = 2.dp)) {
         Text(
-            label,
-            color = Color.Gray,
-            fontWeight = FontWeight.Bold
+            text = label,
+            style = MyanmarBirdsTypographyTokens.Body.copy(
+                color = MyanmarBirdsColor.current.gray_800,
+                fontWeight = FontWeight.Bold
+            )
         )
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
-            value,
-            fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal
+            text = value,
+            style = textStyle
         )
     }
 }
@@ -232,23 +267,18 @@ fun AudioPlayerUI(audioPlayer: AudioPlayer) {
     var sliderPosition by rememberSaveable { mutableFloatStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
 
-    // Optimized time sync - update less frequently
-    LaunchedEffect(currentTime, isDragging) {
-        if (!isDragging && duration > 0) {
-            // Batch updates to reduce recompositions
-            sliderPosition = currentTime.toFloat()
+    val sliderValue by remember(isDragging, sliderPosition, currentTime, duration) {
+        derivedStateOf {
+            when {
+                isDragging -> sliderPosition
+                duration > 0 -> currentTime.toFloat()
+                else -> 0f
+            }
         }
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        // Buffering indicator
-        if (buffering) {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth(),
-                color = MyanmarBirdsColor.current.play_green
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(
@@ -272,11 +302,12 @@ fun AudioPlayerUI(audioPlayer: AudioPlayer) {
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                formatTime(if (isDragging) sliderPosition.toLong() else currentTime),
+                formatTime(sliderValue.toLong()),
                 style = MyanmarBirdsTypographyTokens.Body.copy(
                     color = MyanmarBirdsColor.current.black
                 )
             )
+
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -286,14 +317,6 @@ fun AudioPlayerUI(audioPlayer: AudioPlayer) {
                     color = MyanmarBirdsColor.current.black
                 )
             )
-        }
-
-        // Use derivedStateOf for performance
-        val sliderValue by remember(sliderPosition, duration) {
-            derivedStateOf {
-                if (duration > 0) sliderPosition.coerceIn(0f, duration.toFloat())
-                else 0f
-            }
         }
 
         Slider(
@@ -307,13 +330,32 @@ fun AudioPlayerUI(audioPlayer: AudioPlayer) {
                 isDragging = false
                 audioPlayer.seekToTime(sliderPosition.toLong())
             },
-            colors = SliderDefaults.colors(
-                thumbColor = Color.Red,
-                activeTrackColor = MyanmarBirdsColor.current.play_green,
-                inactiveTrackColor = Color.Gray
-            ),
-            enabled = !buffering
+            enabled = !buffering,
+
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(
+                            color = MyanmarBirdsColor.current.play_green,
+                            shape = CircleShape
+                        )
+                )
+            },
+
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    colors = SliderDefaults.colors(
+                        activeTrackColor = MyanmarBirdsColor.current.play_green,
+                        inactiveTrackColor = Color.LightGray
+                    ),
+                    modifier = Modifier.height(3.dp)
+                )
+            }
         )
+
+
     }
 }
 

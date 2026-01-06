@@ -1,3 +1,5 @@
+package com.aal.myanmarbirds.util
+
 import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -60,6 +62,7 @@ class AudioPlayer(
         exoPlayer.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
+
                     Player.STATE_READY -> {
                         _duration.value = exoPlayer.duration
                         _buffering.value = false
@@ -70,12 +73,16 @@ class AudioPlayer(
                     }
 
                     Player.STATE_ENDED -> {
+                        // 1️⃣ Stop UI state
                         _isPlaying.value = false
-                        _currentTime.value = 0L
                         stopProgressUpdates()
+
+                        // 3️⃣ Sync UI
+                        _currentTime.value = 0L
                     }
                 }
             }
+
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _isPlaying.value = isPlaying
@@ -104,6 +111,9 @@ class AudioPlayer(
     }
 
     fun playAudio() {
+        if (exoPlayer.playbackState == Player.STATE_ENDED) {
+            exoPlayer.seekTo(0)
+        }
         if (!exoPlayer.isPlaying) {
             exoPlayer.play()
         }
