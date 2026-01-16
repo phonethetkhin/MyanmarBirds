@@ -7,6 +7,10 @@ class NavigatorImpl(private val navController: NavController) : Navigator {
         navController.navigateUp()
     }
 
+    override fun navigateToOnBoarding() {
+        navController.navigate(Destinations.OnBoarding)
+    }
+
     override fun navigateToDetail(birdJsonString: String) {
         navController.navigate(Destinations.Detail(birdJsonString = birdJsonString))
     }

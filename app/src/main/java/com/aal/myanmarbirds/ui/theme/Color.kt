@@ -115,6 +115,7 @@ data class MyanmarBirdsColor(
     val play_green: Color = Color(0xFF2B8C84),
     val text_yellow: Color = Color(0xFFEBC263),
     val divider_gray: Color = Color(0xFFD7D7D7),
+    val close_blue: Color = Color(0xFF20356F),
 
 
     ) {

@@ -84,7 +84,6 @@ fun DetailScreen(
             MBTopAppBar(
                 text = "ဘဲကျားလေး",
                 onLightbulbClick = {},
-                onMemoClick = {}
             )
         }
     ) { innerPadding ->

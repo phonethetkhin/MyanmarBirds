@@ -8,6 +8,9 @@ sealed interface Destinations {
     data object Splash : Destinations
 
     @Serializable
+    data object OnBoarding : Destinations
+
+    @Serializable
     data object Home : Destinations
 
     @Serializable

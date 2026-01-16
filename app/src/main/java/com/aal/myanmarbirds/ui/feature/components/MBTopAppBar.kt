@@ -27,7 +27,6 @@ fun MBTopAppBar(
     text: String,
     onLightbulbClick: () -> Unit,
     isHomeScreen: Boolean = false,
-    onMemoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     CenterAlignedTopAppBar(
@@ -72,8 +71,5 @@ fun MBTopAppBar(
 
             }
         },
-        actions = {
-
-        }
     )
 }

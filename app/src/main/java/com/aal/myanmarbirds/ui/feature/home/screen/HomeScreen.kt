@@ -60,8 +60,9 @@ fun HomeScreen(
         topBar = {
             MBTopAppBar(
                 text = "မြန်မာနိုင်ငံရှိငှက်မျိုးစိတ်များ",
-                onLightbulbClick = {},
-                onMemoClick = {},
+                onLightbulbClick = {
+                    onEvent(HomeScreenEvent.NavigateToOnBoarding)
+                },
                 isHomeScreen = true,
             )
         },
