@@ -68,7 +68,7 @@ fun HomeScreen(
         },
         floatingActionButton = {
             MemoButton {
-                // handle memo button click
+                onEvent(HomeScreenEvent.NavigateToObservation)
             }
         }) { innerPadding ->
         HomeScreenContent(

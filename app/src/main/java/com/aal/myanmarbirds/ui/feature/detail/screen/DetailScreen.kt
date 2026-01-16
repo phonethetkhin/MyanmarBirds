@@ -57,6 +57,7 @@ import com.aal.myanmarbirds.ui.feature.components.MBTopAppBar
 import com.aal.myanmarbirds.ui.feature.components.PagerIndicator
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailScreenEvent
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailViewModel
+import com.aal.myanmarbirds.ui.feature.observations.viewmodel.ObservationScreenEvent
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
 import com.aal.myanmarbirds.util.AudioPlayer
@@ -83,7 +84,9 @@ fun DetailScreen(
         topBar = {
             MBTopAppBar(
                 text = "ဘဲကျားလေး",
-                onLightbulbClick = {},
+                onLightbulbClick = {
+                    onEvent(DetailScreenEvent.BackPressed)
+                },
             )
         }
     ) { innerPadding ->

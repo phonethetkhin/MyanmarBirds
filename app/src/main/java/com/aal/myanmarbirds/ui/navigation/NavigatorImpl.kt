@@ -11,6 +11,10 @@ class NavigatorImpl(private val navController: NavController) : Navigator {
         navController.navigate(Destinations.OnBoarding)
     }
 
+    override fun navigateToObservation() {
+        navController.navigate(Destinations.Observation)
+    }
+
     override fun navigateToDetail(birdJsonString: String) {
         navController.navigate(Destinations.Detail(birdJsonString = birdJsonString))
     }

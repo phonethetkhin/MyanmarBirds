@@ -201,6 +201,7 @@ data class HomeScreenState(
 sealed class HomeScreenEvent : BaseUiEvent {
     data object BackPressed : HomeScreenEvent()
     data object NavigateToOnBoarding : HomeScreenEvent()
+    data object NavigateToObservation : HomeScreenEvent()
     data class NavigateToDetail(val birdJson: String) : HomeScreenEvent()
     data class ShowMessage(val message: String) : HomeScreenEvent()
 

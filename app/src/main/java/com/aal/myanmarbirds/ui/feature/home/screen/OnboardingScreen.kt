@@ -1,4 +1,4 @@
-package com.aal.myanmarbirds.ui.feature.detail.screen
+package com.aal.myanmarbirds.ui.feature.home.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

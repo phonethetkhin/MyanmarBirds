@@ -7,6 +7,7 @@ import androidx.navigation.NavController
 interface Navigator {
     fun navigateUp()
     fun navigateToOnBoarding()
+    fun navigateToObservation()
     fun navigateToDetail(birdJsonString: String)
 
 }
