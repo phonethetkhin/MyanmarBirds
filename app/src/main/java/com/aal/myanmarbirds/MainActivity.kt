@@ -19,6 +19,7 @@ import com.aal.myanmarbirds.ui.navigation.appNavGraph
 import com.aal.myanmarbirds.ui.navigation.rememberNavigator
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTheme
 import dagger.hilt.android.AndroidEntryPoint
+import org.osmdroid.config.Configuration
 
 private val enterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
     { fadeIn(animationSpec = tween(300)) }
@@ -30,6 +31,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Configuration.getInstance().load(
+            applicationContext,
+            getSharedPreferences("osm_pref", MODE_PRIVATE)
+        )
+
+        Configuration.getInstance().userAgentValue = packageName
+
         setContent {
             MyanmarBirdsTheme {
                 val navController = rememberNavController()

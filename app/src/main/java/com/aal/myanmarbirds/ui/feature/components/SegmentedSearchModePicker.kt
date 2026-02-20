@@ -34,9 +34,10 @@ fun SegmentedSearchModePicker(
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp)
+            .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.Gray.copy(alpha = 0.6f)) // 👈 this is the row bg
-            .padding(top = 4.dp, bottom = 4.dp),
+            .background(Color.Gray.copy(alpha = 0.6f))
+            .padding(vertical = 4.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     )
     {
@@ -53,16 +54,15 @@ fun SegmentedSearchModePicker(
             ) {
                 Text(
                     text = mode.display,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     color = MyanmarBirdsColor.current.black,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                 )
             }
 
-
-            // Add vertical divider **except after the last button**
             if (index < modes.lastIndex) {
                 VerticalDivider(height = 40.dp)
             }

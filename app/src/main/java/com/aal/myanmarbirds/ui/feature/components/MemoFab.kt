@@ -59,7 +59,7 @@ fun MemoButton(onClick: () -> Unit) {
 
 
 enum class SearchMode(val display: String) {
-    NAME("အမည်🔤🔍"),
+    NAME("အမည်🔤"),
     BODY("ခန္ဓာကိုယ်အရောင်🐦‍"),
     HEAD("ဦးခေါင်းအရောင်🐦")
 }

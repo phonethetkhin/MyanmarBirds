@@ -80,9 +80,15 @@ fun ObservationScreenContent(
     modifier: Modifier = Modifier
 ) {
     HandleApplySuccessBottomSheet(
+        birdName = uiState.birdName,
+        note = uiState.note,
+        onBirdNameChange = { onEvent(ObservationScreenEvent.OnBirdNameChange(it)) },
+        onNoteChange = { onEvent(ObservationScreenEvent.OnNoteChange(it)) },
         isAddObservationBottomSheetOpen = uiState.isAddObservationBottomSheetOpen,
         onBottomSheetClose = { onEvent(ObservationScreenEvent.CloseAddObservationBottomSheet) },
-        onDone = { }
+        onDone = { onEvent(ObservationScreenEvent.CloseAddObservationBottomSheet) },
+        latitude = uiState.latitude,
+        longitude = uiState.longitude
     )
 
     Column(
@@ -119,6 +125,12 @@ fun ObservationScreenContent(
 
 @Composable
 fun HandleApplySuccessBottomSheet(
+    latitude: Double,
+    longitude: Double,
+    birdName: String,
+    note: String,
+    onBirdNameChange: (String) -> Unit,
+    onNoteChange: (String) -> Unit,
     isAddObservationBottomSheetOpen: Boolean,
     onBottomSheetClose: () -> Unit,
     onDone: () -> Unit
@@ -141,7 +153,24 @@ fun HandleApplySuccessBottomSheet(
                     .fillMaxHeight(0.95F)
                     .fillMaxWidth()
             ) {
-                AddObservationBottomSheet {
+                AddObservationBottomSheet(
+                    birdName = birdName,
+                    note = note,
+                    onBirdNameChange = onBirdNameChange,
+                    onNoteChange = onNoteChange,
+                    latitude = latitude,
+                    longitude = longitude,
+                    onLocationSelected = { lat, lng ->
+
+                    },
+                    onCancelClick = {
+                        scope.launch {
+                            sheetState.hide()
+                            onBottomSheetClose()
+                            onDone()
+                        }
+                    }
+                ) {
                     scope.launch {
                         sheetState.hide()
                         onBottomSheetClose()
