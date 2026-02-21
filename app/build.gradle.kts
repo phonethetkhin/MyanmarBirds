@@ -81,13 +81,16 @@ dependencies {
     ksp(libs.room.compiler) // KSP-based annotation processor
 
     //exoplayer
-    implementation("androidx.media3:media3-exoplayer:1.9.2")
-    implementation("androidx.media3:media3-ui:1.9.2")
-    implementation("androidx.media3:media3-session:1.9.2")
-    implementation("androidx.media3:media3-common:1.9.2")
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.common)
 
     //map
-    implementation("org.osmdroid:osmdroid-android:6.1.16")
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
+
+    //compression
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
 
 
 }

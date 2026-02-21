@@ -169,14 +169,16 @@ fun HandleApplySuccessBottomSheet(
                             onBottomSheetClose()
                             onDone()
                         }
+                    },
+                    onSaveClick = {
+                        scope.launch {
+                            sheetState.hide()
+                            onBottomSheetClose()
+                            onDone()
+                        }
+
                     }
-                ) {
-                    scope.launch {
-                        sheetState.hide()
-                        onBottomSheetClose()
-                        onDone()
-                    }
-                }
+                )
             }
         }
     }

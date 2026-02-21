@@ -1,8 +1,21 @@
 package com.aal.myanmarbirds.ui.feature.observations
 
+import android.Manifest
+import android.app.AlertDialog
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Build
 import android.view.MotionEvent
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,11 +26,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,24 +50,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import coil.compose.rememberAsyncImagePainter
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
+import com.aal.myanmarbirds.util.clickable
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
+import java.io.File
+import java.io.FileOutputStream
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -70,6 +97,70 @@ fun AddObservationBottomSheet(
     val today = LocalDate.now()
     var selectedDate by remember { mutableStateOf(today) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var imagePath by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+
+    lateinit var tempImageUri: Uri
+
+    val galleryLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.GetContent()
+        ) { uri ->
+            uri?.let {
+                val savedPath = compressAndSaveImage(context, it)
+                imagePath = savedPath
+            }
+        }
+
+    val cameraLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.TakePicture()
+        ) { success ->
+            if (success) {
+                val savedPath = compressAndSaveImage(context, tempImageUri)
+                imagePath = savedPath
+            }
+        }
+
+    fun launchCamera() {
+        val file = File.createTempFile(
+            "bird_photo_",
+            ".jpg",
+            context.cacheDir
+        )
+        tempImageUri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            file
+        )
+        cameraLauncher.launch(tempImageUri)
+    }
+
+
+    val cameraPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            if (granted) {
+                launchCamera()
+            } else {
+                Toast.makeText(
+                    context,
+                    "Camera permission is required",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+    val galleryPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            if (granted) {
+                galleryLauncher.launch("image/*")
+            }
+        }
+
 
     val formatter = remember {
         DateTimeFormatter.ofPattern("MMM d, yyyy")
@@ -152,19 +243,20 @@ fun AddObservationBottomSheet(
                 )
 
                 HorizontalDivider(color = MyanmarBirdsColor.current.gray_100)
+                BoxPlaceholder(height = 200.dp)
 
-                LocationPickerMap(
-                    latitude = latitude,
-                    longitude = longitude,
-                    onLocationSelected = onLocationSelected
-                )
+//                LocationPickerMap(
+//                    latitude = latitude,
+//                    longitude = longitude,
+//                    onLocationSelected = onLocationSelected
+//                )
 
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider(
                     color = MyanmarBirdsColor.current.gray_100,
                 )
 
-                TextButtonRow("Reset to Current Location")
+                TextButtonRow(text = "Reset to Current Location", verticalPadding = 32.dp)
 
                 HorizontalDivider(
                     color = MyanmarBirdsColor.current.gray_100,
@@ -178,9 +270,125 @@ fun AddObservationBottomSheet(
                     maxLines = 3,
                 )
 
-                TextButtonRow("Add Photo")
+                if (imagePath == null) {
 
-                BoxPlaceholder(height = 200.dp)
+                    // SHOW ADD PHOTO TEXT
+                    Text(
+                        text = "Add Photo",
+                        style = MyanmarBirdsTypographyTokens.Body.copy(
+                            color = MyanmarBirdsColor.current.blue_500,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier
+                            .padding(vertical = 32.dp)
+                            .clickable {
+                                showPhotoChooser(
+                                    context = context,
+                                    onCamera = {
+                                        cameraPermissionLauncher.launch(
+                                            Manifest.permission.CAMERA
+                                        )
+                                    },
+                                    onGallery = {
+                                        val permission =
+                                            if (Build.VERSION.SDK_INT >= 33)
+                                                Manifest.permission.READ_MEDIA_IMAGES
+                                            else
+                                                Manifest.permission.READ_EXTERNAL_STORAGE
+
+                                        if (ContextCompat.checkSelfPermission(
+                                                context,
+                                                permission
+                                            ) == PackageManager.PERMISSION_GRANTED
+                                        ) {
+                                            galleryLauncher.launch("image/*")
+                                        } else {
+                                            galleryPermissionLauncher.launch(permission)
+                                        }
+                                    }
+                                )
+                            }
+                    )
+
+                } else {
+
+                    // SHOW IMAGE WITH ACTION BUTTONS
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp)
+                            .padding(vertical = 12.dp)
+                    ) {
+
+                        Image(
+                            painter = rememberAsyncImagePainter(File(imagePath!!)),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(16.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        // DELETE
+                        IconButton(
+                            onClick = {
+                                File(imagePath!!).delete()
+                                imagePath = null
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .background(Color.Black.copy(0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                        }
+
+                        // REPLACE
+                        IconButton(
+                            onClick = {
+                                showPhotoChooser(
+                                    context = context,
+                                    onCamera = {
+                                        cameraPermissionLauncher.launch(
+                                            Manifest.permission.CAMERA
+                                        )
+                                    },
+                                    onGallery = {
+                                        val permission =
+                                            if (Build.VERSION.SDK_INT >= 33)
+                                                Manifest.permission.READ_MEDIA_IMAGES
+                                            else
+                                                Manifest.permission.READ_EXTERNAL_STORAGE
+
+                                        if (ContextCompat.checkSelfPermission(
+                                                context,
+                                                permission
+                                            ) == PackageManager.PERMISSION_GRANTED
+                                        ) {
+                                            galleryLauncher.launch("image/*")
+                                        } else {
+                                            galleryPermissionLauncher.launch(permission)
+                                        }
+                                    }
+                                )
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp)
+                                .background(Color.Black.copy(0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Replay,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -226,57 +434,22 @@ fun AddObservationBottomSheet(
     }
 }
 
-@Composable
-private fun SectionContent() {
+fun showPhotoChooser(
+    context: Context,
+    onCamera: () -> Unit,
+    onGallery: () -> Unit
+) {
+    val options = arrayOf("Camera", "Gallery")
 
-    // Date
-    SectionRow(
-        title = "Date",
-        trailingContent = {
-            Surface(
-                color = MyanmarBirdsColor.current.gray_100,
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = "Aug 29, 2025",
-                    style = MyanmarBirdsTypographyTokens.Body.copy(
-                        color = MyanmarBirdsColor.current.gray_900,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    modifier = Modifier.padding(8.dp)
-                )
+    AlertDialog.Builder(context)
+        .setTitle("Select Photo")
+        .setItems(options) { _, which ->
+            when (which) {
+                0 -> onCamera()
+                1 -> onGallery()
             }
         }
-    )
-
-    HorizontalDivider()
-
-    SectionRow("Bird Name")
-    HorizontalDivider()
-
-    SectionRow("Location")
-    HorizontalDivider()
-
-    BoxPlaceholder(height = 200.dp)
-
-    Spacer(modifier = Modifier.height(8.dp))
-    HorizontalDivider()
-
-    TextButtonRow("Reset to Current Location")
-
-    HorizontalDivider()
-
-    SectionRow(
-        title = "Note",
-    )
-
-    HorizontalDivider()
-
-    TextButtonRow("Add Photo")
-
-    BoxPlaceholder(height = 200.dp)
-
-    Spacer(modifier = Modifier.height(16.dp))
+        .show()
 }
 
 @Composable
@@ -294,13 +467,15 @@ private fun SheetHeader(
         Text(
             text = "Cancel",
             color = MyanmarBirdsColor.current.close_blue,
-            style = MyanmarBirdsTypographyTokens.Body
+            style = MyanmarBirdsTypographyTokens.Body,
+            modifier = Modifier.clickable { onCancelClick() }
         )
 
         Text(
             text = "Save",
             color = MyanmarBirdsColor.current.close_blue,
-            style = MyanmarBirdsTypographyTokens.Body
+            style = MyanmarBirdsTypographyTokens.Body,
+            modifier = Modifier.clickable { onSaveClick() }
         )
     }
 }
@@ -348,7 +523,8 @@ private fun SectionRow(
 
 @Composable
 private fun TextButtonRow(
-    text: String
+    text: String,
+    verticalPadding: Dp,
 ) {
     Text(
         text = text,
@@ -356,7 +532,7 @@ private fun TextButtonRow(
             color = MyanmarBirdsColor.current.blue_500,
             fontWeight = FontWeight.Bold
         ),
-        modifier = Modifier.padding(vertical = 32.dp)
+        modifier = Modifier.padding(vertical = verticalPadding)
     )
 }
 
@@ -474,8 +650,62 @@ fun LocationPickerMap(
         factory = { mapView },
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .padding(horizontal = 24.dp)
     )
+}
+
+fun compressAndSaveImage(
+    context: Context,
+    uri: Uri
+): String? {
+
+    val inputStream = context.contentResolver.openInputStream(uri)
+        ?: return null
+
+    val bitmap = BitmapFactory.decodeStream(inputStream)
+    inputStream.close()
+
+    val maxWidth = 1280
+    val ratio = bitmap.width.toFloat() / bitmap.height.toFloat()
+
+    val newWidth: Int
+    val newHeight: Int
+
+    if (bitmap.width > maxWidth) {
+        newWidth = maxWidth
+        newHeight = (maxWidth / ratio).toInt()
+    } else {
+        newWidth = bitmap.width
+        newHeight = bitmap.height
+    }
+
+    val resizedBitmap = Bitmap.createScaledBitmap(
+        bitmap,
+        newWidth,
+        newHeight,
+        true
+    )
+
+    val file = File(
+        context.filesDir,
+        "bird_${System.currentTimeMillis()}.jpg"
+    )
+
+    val outputStream = FileOutputStream(file)
+
+    resizedBitmap.compress(
+        Bitmap.CompressFormat.JPEG,
+        80, // compression quality
+        outputStream
+    )
+
+    outputStream.flush()
+    outputStream.close()
+
+    bitmap.recycle()
+    resizedBitmap.recycle()
+
+    return file.absolutePath
 }
 
 @Preview
