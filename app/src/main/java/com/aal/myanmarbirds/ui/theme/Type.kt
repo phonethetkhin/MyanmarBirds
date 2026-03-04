@@ -67,7 +67,7 @@ internal object MyanmarBirdsTypographyTokens {
     val Body
         get() = TextStyle(
             fontSize = 14.sp,
-            lineHeight = 14.sp,
+            lineHeight = 20.sp,
             fontFamily = openSansFamily,
             color = MyanmarBirdsColor.current.white,
             fontWeight = FontWeight.Normal

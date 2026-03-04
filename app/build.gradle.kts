@@ -87,8 +87,7 @@ dependencies {
     implementation(libs.androidx.media3.common)
 
     //map
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
-
+    implementation("org.maplibre.gl:android-sdk:13.0.0")
     //compression
     implementation("androidx.exifinterface:exifinterface:1.4.2")
 

@@ -68,7 +68,7 @@ class DetailViewModel @Inject constructor(
             when (current.searchMode) {
                 SearchMode.NAME ->
                     current.searchText.isEmpty() ||
-                            bird.name.contains(current.searchText, ignoreCase = true) ||
+                            bird.name?.contains(current.searchText, ignoreCase = true) == true ||
                             bird.englishName.contains(current.searchText, ignoreCase = true) ||
                             bird.japaneseName.contains(current.searchText, ignoreCase = true)
 

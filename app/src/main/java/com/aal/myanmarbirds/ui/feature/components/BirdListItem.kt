@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -39,7 +38,7 @@ fun BirdListItem(bird: Bird, onClick: () -> Unit) {
     ) {
 
         // Bird image
-        if (bird.imageNames.isNotEmpty()) {
+        if (!bird.imageNames.isNullOrEmpty()) {
             Image(
                 painter = rememberAsyncImagePainter(bird.imageNames.first()),
                 contentDescription = bird.name,
@@ -50,7 +49,7 @@ fun BirdListItem(bird: Bird, onClick: () -> Unit) {
             )
         } else {
             Image(
-                painter = rememberAsyncImagePainter(R.drawable.placeholder),
+                painter = rememberAsyncImagePainter(R.drawable.landscape_placeholder),
                 contentDescription = bird.name,
                 modifier = Modifier
                     .size(50.dp)
@@ -70,7 +69,9 @@ fun BirdListItem(bird: Bird, onClick: () -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = bird.name, fontWeight = FontWeight.Bold)
+                    bird.name?.let {
+                        Text(text = bird.name, fontWeight = FontWeight.Bold)
+                    }
                     Text(text = bird.englishName, color = Color.Gray)
                 }
 

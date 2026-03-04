@@ -3,6 +3,7 @@
 package com.aal.myanmarbirds.ui.feature.detail.screen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,7 +58,6 @@ import com.aal.myanmarbirds.ui.feature.components.MBTopAppBar
 import com.aal.myanmarbirds.ui.feature.components.PagerIndicator
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailScreenEvent
 import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailViewModel
-import com.aal.myanmarbirds.ui.feature.observations.viewmodel.ObservationScreenEvent
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
 import com.aal.myanmarbirds.util.AudioPlayer
@@ -106,43 +106,61 @@ fun DetailScreenContent(
 ) {
     val context = LocalContext.current
 
-    val audioPlayer = remember {
-        AudioPlayer(context, bird.audioResId)
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { audioPlayer.release() }
-    }
-
     Column(
         modifier = modifier.verticalScroll(rememberScrollState())
     ) {
 
-        /* ---------------- IMAGE PAGER ---------------- */
+        /* ---------------- IMAGE SECTION ---------------- */
 
-        val pagerState = rememberPagerState(
-            pageCount = { bird.imageNames.size }
-        )
+        val images = bird.imageNames
 
-        var currentScale by remember { mutableStateOf(1f) }
+        if (!images.isNullOrEmpty()) {
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp),
-            beyondViewportPageCount = 1,
-            overscrollEffect = null
-        ) { page ->
+            val pagerState = rememberPagerState(
+                pageCount = { images.size }
+            )
 
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+                beyondViewportPageCount = 1,
+                overscrollEffect = null
+            ) { page ->
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    AsyncImage(
+                        model = images[page],
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            if (images.size > 1) {
+                PagerIndicator(
+                    pageCount = images.size,
+                    currentPage = pagerState.currentPage
+                )
+            }
+
+        } else {
             Surface(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .height(300.dp)
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                AsyncImage(
-                    model = bird.imageNames[page],
+                Image(
+                    painter = painterResource(R.drawable.landscape_placeholder),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -150,24 +168,28 @@ fun DetailScreenContent(
             }
         }
 
-        PagerIndicator(
-            pageCount = bird.imageNames.size,
-            currentPage = pagerState.currentPage
-        )
-
-        /* ---------------- SCROLLABLE CONTENT ---------------- */
-
         Column(
-            modifier = Modifier
-
-                .padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
         ) {
 
-            AudioPlayerUI(audioPlayer)
-            Spacer(modifier = Modifier.height(16.dp))
+            // ✅ SHOW ONLY IF audioFileName IS NOT NULL
+            bird.audioFileName?.let { fileName ->
 
-            HorizontalDivider(color = MyanmarBirdsColor.current.divider_gray)
+                val audioPlayer = remember(fileName) {
+                    AudioPlayer(context, fileName)
+                }
 
+                DisposableEffect(audioPlayer) {
+                    onDispose { audioPlayer.release() }
+                }
+
+                AudioPlayerUI(audioPlayer)
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MyanmarBirdsColor.current.divider_gray)
+            }
+
+            // Rest of content continues normally
             Column(modifier = Modifier.padding(16.dp)) {
                 InfoRow(
                     label = "မျိုးစဥ်(order):",
@@ -222,7 +244,7 @@ fun DetailScreenContent(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = bird.description,
+                    text = bird.description ?: "-",
                     style = MyanmarBirdsTypographyTokens.Body.copy(
                         fontWeight = FontWeight.Bold,
                         color = MyanmarBirdsColor.current.black

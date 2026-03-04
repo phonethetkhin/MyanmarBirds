@@ -8,7 +8,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
-import android.view.MotionEvent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,8 +41,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,22 +55,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.rememberAsyncImagePainter
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
 import com.aal.myanmarbirds.util.clickable
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Overlay
 import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
@@ -243,13 +231,11 @@ fun AddObservationBottomSheet(
                 )
 
                 HorizontalDivider(color = MyanmarBirdsColor.current.gray_100)
-                BoxPlaceholder(height = 200.dp)
-
-//                LocationPickerMap(
-//                    latitude = latitude,
-//                    longitude = longitude,
-//                    onLocationSelected = onLocationSelected
-//                )
+                LocationPickerMap(
+                    latitude = latitude,
+                    longitude = longitude,
+                    onLocationSelected = onLocationSelected
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider(
@@ -544,114 +530,6 @@ private fun BoxPlaceholder(height: Dp) {
             .height(height)
             .background(MyanmarBirdsColor.current.blue_500)
     ) {}
-}
-
-@Composable
-fun LocationPickerMap(
-    latitude: Double?,
-    longitude: Double?,
-    onLocationSelected: (Double, Double) -> Unit
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    // Create MapView only once
-    val mapView = remember {
-        MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
-            setMultiTouchControls(true)
-            controller.setZoom(15.0)
-        }
-    }
-
-    // Remember marker (only once)
-    val marker = remember {
-        Marker(mapView).apply {
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        }
-    }
-
-    // Handle lifecycle properly (VERY IMPORTANT)
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-                Lifecycle.Event.ON_DESTROY -> mapView.onDetach()
-                else -> {}
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    // Update map when latitude/longitude changes
-    LaunchedEffect(latitude, longitude) {
-
-        val lat = latitude ?: 16.8409
-        val lng = longitude ?: 96.1735
-
-        val geoPoint = GeoPoint(lat, lng)
-
-        mapView.controller.setCenter(geoPoint)
-
-        marker.position = geoPoint
-
-        if (!mapView.overlays.contains(marker)) {
-            mapView.overlays.add(marker)
-        }
-
-        mapView.invalidate()
-    }
-
-    // Add tap listener only once
-    DisposableEffect(Unit) {
-
-        val overlay = object : Overlay() {
-            override fun onSingleTapConfirmed(
-                e: MotionEvent?,
-                mapView: MapView?
-            ): Boolean {
-
-                if (e != null && mapView != null) {
-
-                    val projection = mapView.projection
-                    val geoPoint = projection.fromPixels(
-                        e.x.toInt(),
-                        e.y.toInt()
-                    ) as GeoPoint
-
-                    marker.position = geoPoint
-                    mapView.overlays.clear()
-                    mapView.overlays.add(marker)
-                    mapView.invalidate()
-
-                    onLocationSelected(
-                        geoPoint.latitude,
-                        geoPoint.longitude
-                    )
-                }
-                return true
-            }
-        }
-
-        mapView.overlays.add(overlay)
-
-        onDispose {
-            mapView.overlays.remove(overlay)
-        }
-    }
-
-    AndroidView(
-        factory = { mapView },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-    )
 }
 
 fun compressAndSaveImage(
