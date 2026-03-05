@@ -1,7 +1,6 @@
 package com.aal.myanmarbirds.ui.feature.detail.viewmodel
 
 import com.aal.myanmarbirds.data.model.Bird
-import com.aal.myanmarbirds.data.repository.home.HomeRepository
 import com.aal.myanmarbirds.ui.base.BaseUiEvent
 import com.aal.myanmarbirds.ui.base.BaseUiState
 import com.aal.myanmarbirds.ui.base.BaseViewModel
@@ -11,9 +10,7 @@ import jakarta.inject.Inject
 
 
 @HiltViewModel
-class DetailViewModel @Inject constructor(
-    private val repository: HomeRepository
-) : BaseViewModel<DetailScreenState, DetailScreenEvent>(DetailScreenState()) {
+class DetailViewModel @Inject constructor() : BaseViewModel<DetailScreenState, DetailScreenEvent>(DetailScreenState()) {
 
     fun onEvent(event: DetailScreenEvent) {
         when (event) {

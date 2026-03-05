@@ -3,7 +3,6 @@ package com.aal.myanmarbirds.ui.feature.home.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.aal.myanmarbirds.data.model.Bird
 import com.aal.myanmarbirds.data.model.sampleBirds
-import com.aal.myanmarbirds.data.repository.home.HomeRepository
 import com.aal.myanmarbirds.ui.base.BaseUiEvent
 import com.aal.myanmarbirds.ui.base.BaseUiState
 import com.aal.myanmarbirds.ui.base.BaseViewModel
@@ -14,9 +13,7 @@ import kotlinx.coroutines.launch
 
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val repository: HomeRepository
-) : BaseViewModel<HomeScreenState, HomeScreenEvent>(
+class HomeViewModel @Inject constructor() : BaseViewModel<HomeScreenState, HomeScreenEvent>(
     HomeScreenState()
 ) {
 

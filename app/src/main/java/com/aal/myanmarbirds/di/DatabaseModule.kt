@@ -3,10 +3,11 @@ package com.aal.myanmarbirds.di
 import android.content.Context
 import androidx.room.Room
 import com.aal.myanmarbirds.db.AppDatabase
-import com.aal.myanmarbirds.db.daos.UserDao
+import com.aal.myanmarbirds.db.daos.ObservationDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -16,14 +17,19 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(appContext: Context): AppDatabase {
+    fun provideDatabase(
+        @ApplicationContext context: Context
+    ): AppDatabase {
+
         return Room.databaseBuilder(
-            appContext,
+            context,
             AppDatabase::class.java,
-            "my_database"
+            "birds_database"
         ).build()
     }
 
     @Provides
-    fun provideUserDao(db: AppDatabase): UserDao = db.userDao()
+    fun provideObservationDao(
+        db: AppDatabase
+    ): ObservationDao = db.observationDao()
 }

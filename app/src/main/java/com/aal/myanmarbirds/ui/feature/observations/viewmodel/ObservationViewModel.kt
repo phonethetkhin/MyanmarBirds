@@ -1,40 +1,50 @@
 package com.aal.myanmarbirds.ui.feature.observations.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import com.aal.myanmarbirds.data.repository.home.HomeRepository
+import androidx.lifecycle.viewModelScope
+import com.aal.myanmarbirds.data.repository.home.ObservationRepository
+import com.aal.myanmarbirds.db.entities.ObservationEntity
 import com.aal.myanmarbirds.ui.base.BaseUiEvent
 import com.aal.myanmarbirds.ui.base.BaseUiState
 import com.aal.myanmarbirds.ui.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
 
 @HiltViewModel
 class ObservationViewModel @Inject constructor(
-    private val repository: HomeRepository
+    private val observationRepo: ObservationRepository
 ) : BaseViewModel<ObservationScreenState, ObservationScreenEvent>(ObservationScreenState()) {
-    var latitude by mutableStateOf<Double?>(null)
-        private set
 
-    var longitude by mutableStateOf<Double?>(null)
-        private set
-
-    fun updateLocation(lat: Double, lng: Double) {
-        latitude = lat
-        longitude = lng
+    init {
+        observeObservations()
     }
 
     fun onEvent(event: ObservationScreenEvent) {
         when (event) {
             is ObservationScreenEvent.OnBirdNameChange -> updateState { it.copy(birdName = event.birdName) }
             is ObservationScreenEvent.OnNoteChange -> updateState { it.copy(note = event.note) }
-            is ObservationScreenEvent.UpdateBodyColor -> updateBodyColor(event.color)
+            is ObservationScreenEvent.UpdateBodyColorFilter -> updateState {
+                it.copy(selectedBodyColorFilter = event.color)
+            }
+
+            is ObservationScreenEvent.UpdateBodyColor -> updateState {
+                it.copy(selectedBodyColor = event.color)
+            }
+
+            is ObservationScreenEvent.SaveObservation -> saveObservation()
             is ObservationScreenEvent.OpenAddObservationBottomSheet -> updateState {
                 it.copy(
                     isAddObservationBottomSheetOpen = true,
                 )
             }
+
+            is ObservationScreenEvent.UpdateDate ->
+                updateState { it.copy(selectedDate = event.date) }
+
+            is ObservationScreenEvent.UpdateImagePath ->
+                updateState { it.copy(imagePath = event.path) }
 
             is ObservationScreenEvent.CloseAddObservationBottomSheet -> updateState {
                 it.copy(
@@ -47,8 +57,37 @@ class ObservationViewModel @Inject constructor(
         }
     }
 
-    private fun updateBodyColor(color: String) {
-        updateState { it.copy(selectedBodyColor = color) }
+    fun saveObservation(
+
+    ) {
+        val state = uiState.value
+
+        viewModelScope.launch {
+
+            val observation = ObservationEntity(
+                birdName = state.birdName,
+                note = state.note,
+                date = state.selectedDate
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli(),
+                latitude = state.latitude,
+                longitude = state.longitude,
+                imagePath = state.imagePath,
+                bodyColor = state.selectedBodyColor
+            )
+
+            observationRepo.insertObservation(observation)
+        }
+    }
+
+    private fun observeObservations() {
+        viewModelScope.launch {
+            observationRepo.getAllObservations()
+                .collect { list ->
+                    updateState { it.copy(observations = list) }
+                }
+        }
     }
 }
 
@@ -60,6 +99,10 @@ data class ObservationScreenState(
     val longitude: Double = 0.0,
     val note: String = "",
     val selectedBodyColor: String = "",
+    val selectedBodyColorFilter: String = "",
+    val selectedDate: LocalDate = LocalDate.now(),
+    val imagePath: String? = null,
+    val observations: List<ObservationEntity> = emptyList(),
     val isAddObservationBottomSheetOpen: Boolean = false,
 ) : BaseUiState
 
@@ -67,11 +110,14 @@ data class ObservationScreenState(
 sealed class ObservationScreenEvent : BaseUiEvent {
     data object BackPressed : ObservationScreenEvent()
     data class UpdateBodyColor(val color: String) : ObservationScreenEvent()
+    data class UpdateBodyColorFilter(val color: String) : ObservationScreenEvent()
+    data object SaveObservation : ObservationScreenEvent()
     data class OnBirdNameChange(val birdName: String) : ObservationScreenEvent()
     data class OnNoteChange(val note: String) : ObservationScreenEvent()
     data object OpenAddObservationBottomSheet : ObservationScreenEvent()
     data object CloseAddObservationBottomSheet : ObservationScreenEvent()
-
+    data class UpdateDate(val date: LocalDate) : ObservationScreenEvent()
+    data class UpdateImagePath(val path: String?) : ObservationScreenEvent()
 
 }
 

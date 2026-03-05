@@ -27,6 +27,7 @@ import com.aal.myanmarbirds.util.clickable
 
 @Composable
 fun SegmentedColorSelector(
+    modifier: Modifier = Modifier,
     title: String,
     colors: List<String>,
     selectedColor: String,
@@ -35,7 +36,7 @@ fun SegmentedColorSelector(
     val totalItems = colors.size + 1 // +1 for "All"
     val itemFraction = 1f / totalItems
 
-    Column {
+    Column(modifier = modifier) {
 
         Text(
             text = title,
@@ -43,13 +44,11 @@ fun SegmentedColorSelector(
                 fontWeight = FontWeight.Bold,
                 color = MyanmarBirdsColor.current.black
             ),
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(vertical = 16.dp)
         )
 
         Surface(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
+
             shape = RoundedCornerShape(8.dp),
             border = BorderStroke(1.dp, Color.LightGray),
             color = Color.Gray.copy(alpha = 0.2f)

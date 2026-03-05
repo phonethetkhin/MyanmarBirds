@@ -58,6 +58,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
+import com.aal.myanmarbirds.ui.feature.components.BodyColors
+import com.aal.myanmarbirds.ui.feature.components.SegmentedColorSelector
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
@@ -76,16 +78,20 @@ fun AddObservationBottomSheet(
     note: String,
     latitude: Double?,
     longitude: Double?,
+    selectedDate: LocalDate,
+    imagePath: String?,
+    onDateChange: (LocalDate) -> Unit,
+    onImagePathChange: (String?) -> Unit,
     onBirdNameChange: (String) -> Unit,
     onNoteChange: (String) -> Unit,
+    selectedBodyColor: String,
+    onBodyColorChange: (String) -> Unit,
     onLocationSelected: (Double, Double) -> Unit,
     onCancelClick: () -> Unit = {},
     onSaveClick: () -> Unit = {}
 ) {
     val today = LocalDate.now()
-    var selectedDate by remember { mutableStateOf(today) }
     var showDatePicker by remember { mutableStateOf(false) }
-    var imagePath by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
     lateinit var tempImageUri: Uri
@@ -96,7 +102,7 @@ fun AddObservationBottomSheet(
         ) { uri ->
             uri?.let {
                 val savedPath = compressAndSaveImage(context, it)
-                imagePath = savedPath
+                onImagePathChange(savedPath)
             }
         }
 
@@ -106,7 +112,7 @@ fun AddObservationBottomSheet(
         ) { success ->
             if (success) {
                 val savedPath = compressAndSaveImage(context, tempImageUri)
-                imagePath = savedPath
+                onImagePathChange(savedPath)
             }
         }
 
@@ -216,6 +222,20 @@ fun AddObservationBottomSheet(
                     onValueChange = { onBirdNameChange(it) }
                 )
 
+                SegmentedColorSelector(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    title = "Body Color",
+                    colors = BodyColors.entries.map { it.display },
+                    selectedColor = selectedBodyColor,
+                    onColorSelected = {
+                        onBodyColorChange(it)
+                    }
+                )
+                HorizontalDivider(
+                    color = MyanmarBirdsColor.current.gray_100,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
                 SectionRow(
                     title = "Location",
                     trailingContent = {
@@ -230,7 +250,10 @@ fun AddObservationBottomSheet(
                     }
                 )
 
-                HorizontalDivider(color = MyanmarBirdsColor.current.gray_100)
+                HorizontalDivider(
+                    color = MyanmarBirdsColor.current.gray_100,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
                 LocationPickerMap(
                     latitude = latitude,
                     longitude = longitude,
@@ -319,7 +342,7 @@ fun AddObservationBottomSheet(
                         IconButton(
                             onClick = {
                                 File(imagePath!!).delete()
-                                imagePath = null
+                                onImagePathChange(null)
                             },
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
@@ -397,9 +420,11 @@ fun AddObservationBottomSheet(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            selectedDate = Instant.ofEpochMilli(millis)
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
+                            onDateChange(
+                                Instant.ofEpochMilli(millis)
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                            )
                         }
                         showDatePicker = false
                     }
@@ -453,14 +478,14 @@ private fun SheetHeader(
         Text(
             text = "Cancel",
             color = MyanmarBirdsColor.current.close_blue,
-            style = MyanmarBirdsTypographyTokens.Body,
+            style = MyanmarBirdsTypographyTokens.Title.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier.clickable { onCancelClick() }
         )
 
         Text(
             text = "Save",
             color = MyanmarBirdsColor.current.close_blue,
-            style = MyanmarBirdsTypographyTokens.Body,
+            style = MyanmarBirdsTypographyTokens.Title.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier.clickable { onSaveClick() }
         )
     }
@@ -598,7 +623,13 @@ private fun AddObservationBottomSheetPreview() {
             latitude = 111.50,
             longitude = 111.80,
             onLocationSelected = {} as (Double, Double) -> Unit,
-            onCancelClick = {}
+            onCancelClick = {},
+            selectedDate = LocalDate.now(),
+            imagePath = null,
+            onDateChange = {},
+            onImagePathChange = {},
+            selectedBodyColor = "",
+            onBodyColorChange = {}
         ) { }
     }
 }
