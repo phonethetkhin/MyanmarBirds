@@ -57,12 +57,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.aal.myanmarbirds.ui.feature.components.BodyColors
 import com.aal.myanmarbirds.ui.feature.components.SegmentedColorSelector
+import com.aal.myanmarbirds.ui.feature.observations.viewmodel.LocationViewModel
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
+import com.aal.myanmarbirds.util.RequestLocationPermission
 import com.aal.myanmarbirds.util.clickable
 import java.io.File
 import java.io.FileOutputStream
@@ -76,9 +81,11 @@ import java.time.format.DateTimeFormatter
 fun AddObservationBottomSheet(
     birdName: String,
     note: String,
-    latitude: Double?,
-    longitude: Double?,
     selectedDate: LocalDate,
+    selectedLat: Double?,
+    selectedLng: Double?,
+    currentLat: Double?,
+    currentLng: Double?,
     imagePath: String?,
     onDateChange: (LocalDate) -> Unit,
     onImagePathChange: (String?) -> Unit,
@@ -95,6 +102,7 @@ fun AddObservationBottomSheet(
     val context = LocalContext.current
 
     lateinit var tempImageUri: Uri
+
 
     val galleryLauncher =
         rememberLauncherForActivityResult(
@@ -239,9 +247,9 @@ fun AddObservationBottomSheet(
                 SectionRow(
                     title = "Location",
                     trailingContent = {
-                        if (latitude != null && longitude != null) {
+                        if (selectedLat != null && selectedLng != null) {
                             Text(
-                                text = "%.5f, %.5f".format(latitude, longitude),
+                                text = "%.5f, %.5f".format(selectedLat, selectedLng),
                                 style = MyanmarBirdsTypographyTokens.Body.copy(
                                     color = MyanmarBirdsColor.current.gray_800
                                 )
@@ -255,10 +263,14 @@ fun AddObservationBottomSheet(
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
                 LocationPickerMap(
-                    latitude = latitude,
-                    longitude = longitude,
-                    onLocationSelected = onLocationSelected
-                )
+                    selectedLatitude = selectedLat,
+                    selectedLongitude = selectedLng,
+                    currentLatitude = currentLat,
+                    currentLongitude = currentLng
+                ) { lat, lng ->
+
+                    onLocationSelected(lat, lng)
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider(
@@ -620,8 +632,6 @@ private fun AddObservationBottomSheetPreview() {
             note = "",
             onBirdNameChange = {},
             onNoteChange = {},
-            latitude = 111.50,
-            longitude = 111.80,
             onLocationSelected = {} as (Double, Double) -> Unit,
             onCancelClick = {},
             selectedDate = LocalDate.now(),
@@ -629,7 +639,11 @@ private fun AddObservationBottomSheetPreview() {
             onDateChange = {},
             onImagePathChange = {},
             selectedBodyColor = "",
-            onBodyColorChange = {}
+            onBodyColorChange = {},
+            selectedLat = null,
+            selectedLng = null,
+            currentLat = null,
+            currentLng = null
         ) { }
     }
 }

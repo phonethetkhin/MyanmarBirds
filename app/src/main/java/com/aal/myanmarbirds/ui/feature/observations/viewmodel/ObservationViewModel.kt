@@ -14,11 +14,29 @@ import java.time.ZoneId
 
 @HiltViewModel
 class ObservationViewModel @Inject constructor(
-    private val observationRepo: ObservationRepository
+    private val observationRepo: ObservationRepository,
 ) : BaseViewModel<ObservationScreenState, ObservationScreenEvent>(ObservationScreenState()) {
 
     init {
         observeObservations()
+    }
+
+    private fun observeObservations() {
+        viewModelScope.launch {
+            observationRepo.getAllObservations()
+                .collect { list ->
+                    updateState { it.copy(observations = list) }
+                }
+        }
+    }
+
+    fun updateCurrentLocation(latitude: Double, longitude: Double) {
+        updateState { currentState ->
+            currentState.copy(
+                currentLatitude = latitude,
+                currentLongitude = longitude
+            )
+        }
     }
 
     fun onEvent(event: ObservationScreenEvent) {
@@ -27,6 +45,13 @@ class ObservationViewModel @Inject constructor(
             is ObservationScreenEvent.OnNoteChange -> updateState { it.copy(note = event.note) }
             is ObservationScreenEvent.UpdateBodyColorFilter -> updateState {
                 it.copy(selectedBodyColorFilter = event.color)
+            }
+
+            is ObservationScreenEvent.OnLocationSelected -> updateState {
+                it.copy(
+                    selectedLatitude = event.lat,
+                    selectedLongitude = event.lng
+                )
             }
 
             is ObservationScreenEvent.UpdateBodyColor -> updateState {
@@ -71,8 +96,8 @@ class ObservationViewModel @Inject constructor(
                     .atStartOfDay(ZoneId.systemDefault())
                     .toInstant()
                     .toEpochMilli(),
-                latitude = state.latitude,
-                longitude = state.longitude,
+                latitude = state.selectedLatitude,
+                longitude = state.selectedLongitude,
                 imagePath = state.imagePath,
                 bodyColor = state.selectedBodyColor
             )
@@ -81,22 +106,17 @@ class ObservationViewModel @Inject constructor(
         }
     }
 
-    private fun observeObservations() {
-        viewModelScope.launch {
-            observationRepo.getAllObservations()
-                .collect { list ->
-                    updateState { it.copy(observations = list) }
-                }
-        }
-    }
+
 }
 
 
 data class ObservationScreenState(
     val isLoading: Boolean = false,
     val birdName: String = "",
-    val latitude: Double = 0.0,
-    val longitude: Double = 0.0,
+    val selectedLatitude: Double? = null,
+    val selectedLongitude: Double? = null,
+    val currentLatitude: Double? = null,
+    val currentLongitude: Double? = null,
     val note: String = "",
     val selectedBodyColor: String = "",
     val selectedBodyColorFilter: String = "",
@@ -114,10 +134,13 @@ sealed class ObservationScreenEvent : BaseUiEvent {
     data object SaveObservation : ObservationScreenEvent()
     data class OnBirdNameChange(val birdName: String) : ObservationScreenEvent()
     data class OnNoteChange(val note: String) : ObservationScreenEvent()
+    data class OnLocationSelected(val lat: Double, val lng: Double) : ObservationScreenEvent()
     data object OpenAddObservationBottomSheet : ObservationScreenEvent()
     data object CloseAddObservationBottomSheet : ObservationScreenEvent()
     data class UpdateDate(val date: LocalDate) : ObservationScreenEvent()
     data class UpdateImagePath(val path: String?) : ObservationScreenEvent()
+    data class NavigateToObservationDetail(val observationJson: String) : ObservationScreenEvent()
+
 
 }
 

@@ -1,101 +1,280 @@
 package com.aal.myanmarbirds.ui.feature.observations
 
+import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
+import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
 
 @Composable
 fun LocationPickerMap(
-    latitude: Double?,
-    longitude: Double?,
-    onLocationSelected: (Double, Double) -> Unit
+    selectedLatitude: Double?,
+    currentLatitude: Double?,
+    selectedLongitude: Double?,
+    currentLongitude: Double?,
+    onLocationSelected: (Double, Double) -> Unit = { _, _ -> }
 ) {
+
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
 
     val mapView = remember {
         MapView(context).apply {
-            onCreate(null)
+            id = android.view.View.generateViewId()
         }
     }
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> mapView.onStart()
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-                Lifecycle.Event.ON_STOP -> mapView.onStop()
-                Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
-                else -> {}
-            }
-        }
+    var mapRef by remember { mutableStateOf<MapLibreMap?>(null) }
+    var markerRef by remember { mutableStateOf<Marker?>(null) }
+    var styleRef by remember { mutableStateOf<Style?>(null) }
+    var isMapReady by remember { mutableStateOf(false) }
 
-        lifecycleOwner.lifecycle.addObserver(observer)
+    val mapTilerKey = "UE0iWVkk5q3sPd9VyYbv"
+    val selectedLocation =
+        LatLng(
+            selectedLatitude ?: currentLatitude ?: 16.840,
+            selectedLongitude ?: currentLongitude ?: 96.200
+        )
+    Log.e("testASDF", "iniCurrentLocation, ${selectedLocation}")
+
+    /* ---------------- Map Lifecycle ---------------- */
+
+    DisposableEffect(Unit) {
+        try {
+            mapView.onCreate(null)
+            mapView.onStart()
+            mapView.onResume()
+        } catch (e: Exception) {
+            Log.e("testASDF", "Error in map lifecycle")
+        }
 
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+            try {
+                mapView.onPause()
+                mapView.onStop()
+                mapView.onDestroy()
+            } catch (e: Exception) {
+                Log.e("testASDF", "Error disposing map")
+            }
         }
     }
 
-    AndroidView(
-        factory = { mapView },
+    /* ---------------- Helper Functions ---------------- */
+
+    fun updateMarkerPosition(map: MapLibreMap, newPosition: LatLng) {
+        try {
+            // Remove old marker if it exists
+            markerRef?.let { oldMarker ->
+                map.removeMarker(oldMarker)
+            }
+
+            // Add new marker
+            markerRef = map.addMarker(
+                MarkerOptions()
+                    .position(newPosition)
+                    .title("Bird Found")
+            )
+
+            Log.e("testASDF", "Marker updated to: $newPosition")
+        } catch (e: Exception) {
+            Log.e("testASDF", "Error updating marker")
+        }
+    }
+
+    fun moveToLocation(map: MapLibreMap, location: LatLng) {
+        Log.e("testASDF", "moveToLocation, $location")
+
+        if (!isMapReady) {
+            Log.e("testASDF", "Map not ready, skipping move")
+            return
+        }
+
+        try {
+            // Animate camera
+            map.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(location, 15.0),
+                500, // duration in ms
+                object : MapLibreMap.CancelableCallback {
+                    override fun onCancel() {
+                        Log.e("testASDF", "Camera animation cancelled")
+                    }
+
+                    override fun onFinish() {
+                        // Update marker after camera animation completes
+                        updateMarkerPosition(map, location)
+                        onLocationSelected(location.latitude, location.longitude)
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("testASDF", "Error moving camera")
+        }
+    }
+
+    fun initializeMap(map: MapLibreMap) {
+        mapRef = map
+
+        map.setStyle(
+            Style.Builder()
+                .fromUri("https://api.maptiler.com/maps/streets/style.json?key=$mapTilerKey")
+        ) { style ->
+            styleRef = style
+            isMapReady = true
+
+            // Set camera position
+            map.cameraPosition = CameraPosition.Builder()
+                .target(selectedLocation)
+                .zoom(14.0)
+                .build()
+
+            // Clear any existing markers and add initial marker
+            map.markers.forEach { marker ->
+                map.removeMarker(marker)
+            }
+
+            // Add initial marker
+            markerRef = map.addMarker(
+                MarkerOptions()
+                    .position(selectedLocation)
+                    .title("Bird Found")
+            )
+
+            // Configure UI settings
+            map.uiSettings.apply {
+                isZoomGesturesEnabled = true
+                isScrollGesturesEnabled = true
+                isTiltGesturesEnabled = true
+                isRotateGesturesEnabled = true
+                isCompassEnabled = true
+            }
+
+            // Add map click listener
+            map.addOnMapClickListener { point ->
+                if (isMapReady) {
+                    updateMarkerPosition(map, point)
+                    onLocationSelected(point.latitude, point.longitude)
+                }
+                true
+            }
+
+            Log.e("testASDF", "Map initialized successfully")
+        }
+    }
+
+    /* ---------------- UI ---------------- */
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(300.dp)
-            .padding(horizontal = 24.dp)
-    ) { map ->
+    ) {
 
-        map.getMapAsync { mapboxMap ->
+        AndroidView(
+            factory = { mapView },
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInteropFilter { motionEvent ->
+                    when (motionEvent.action) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            mapView.parent?.requestDisallowInterceptTouchEvent(true)
+                        }
 
-            mapboxMap.setStyle("https://demotiles.maplibre.org/style.json") {
-
-                val lat = latitude ?: 16.8409
-                val lng = longitude ?: 96.1735
-
-                val initialPosition = LatLng(lat, lng)
-
-                mapboxMap.moveCamera(
-                    CameraUpdateFactory.newLatLngZoom(initialPosition, 15.0)
-                )
-
-                var marker: Marker? = null
-
-                marker = mapboxMap.addMarker(
-                    MarkerOptions()
-                        .position(initialPosition)
-                )
-
-                mapboxMap.addOnMapClickListener { point ->
-
-                    marker?.remove()
-
-                    marker = mapboxMap.addMarker(
-                        MarkerOptions().position(point)
-                    )
-
-                    onLocationSelected(
-                        point.latitude,
-                        point.longitude
-                    )
-
-                    true
+                        android.view.MotionEvent.ACTION_UP,
+                        android.view.MotionEvent.ACTION_CANCEL -> {
+                            mapView.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                    }
+                    false
+                },
+            update = { view ->
+                // Only initialize if map is not already set up
+                if (mapRef == null) {
+                    view.getMapAsync { map ->
+                        initializeMap(map)
+                    }
                 }
+            }
+        )
+
+        /* ---------------- Zoom Buttons ---------------- */
+        if (isMapReady) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IconButton(
+                    onClick = {
+                        mapRef?.animateCamera(CameraUpdateFactory.zoomIn())
+                    },
+                    modifier = Modifier
+                        .background(Color.White, CircleShape)
+                        .size(42.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Zoom In")
+                }
+
+                IconButton(
+                    onClick = {
+                        mapRef?.animateCamera(CameraUpdateFactory.zoomOut())
+                    },
+                    modifier = Modifier
+                        .background(Color.White, CircleShape)
+                        .size(42.dp)
+                ) {
+                    Icon(Icons.Default.Remove, contentDescription = "Zoom Out")
+                }
+            }
+
+            /* ---------------- My Location Button ---------------- */
+            IconButton(
+                onClick = {
+                    mapRef?.let { map ->
+                        Log.e("testASDF", "CurrentLocation, $selectedLocation")
+
+                        moveToLocation(map, selectedLocation)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+                    .background(Color.White, CircleShape)
+                    .size(42.dp)
+            ) {
+                Icon(Icons.Default.MyLocation, contentDescription = "My Location")
             }
         }
     }

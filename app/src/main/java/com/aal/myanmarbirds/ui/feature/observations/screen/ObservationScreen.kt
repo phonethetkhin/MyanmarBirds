@@ -28,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,20 +45,24 @@ import com.aal.myanmarbirds.ui.feature.components.BodyColors
 import com.aal.myanmarbirds.ui.feature.components.MBTopAppBar
 import com.aal.myanmarbirds.ui.feature.components.SegmentedColorSelector
 import com.aal.myanmarbirds.ui.feature.observations.AddObservationBottomSheet
+import com.aal.myanmarbirds.ui.feature.observations.viewmodel.LocationViewModel
 import com.aal.myanmarbirds.ui.feature.observations.viewmodel.ObservationScreenEvent
 import com.aal.myanmarbirds.ui.feature.observations.viewmodel.ObservationScreenState
 import com.aal.myanmarbirds.ui.feature.observations.viewmodel.ObservationViewModel
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
+import com.aal.myanmarbirds.util.RequestLocationPermission
 import com.aal.myanmarbirds.util.circleClickable
 import com.aal.myanmarbirds.util.clickable
 import com.aal.myanmarbirds.util.toReadableDate
+import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 
 @Composable
 fun ObservationScreen(
+    locationViewModel: LocationViewModel = hiltViewModel(),
     observationViewModel: ObservationViewModel = hiltViewModel(),
     onEvent: (ObservationScreenEvent) -> Unit
 ) {
@@ -66,7 +71,19 @@ fun ObservationScreen(
     EventHandler(observationViewModel) { event ->
         onEvent(event)
     }
+    RequestLocationPermission {
+        locationViewModel.fetchCurrentLocation()
+    }
+    val locationState by locationViewModel.currentLocation.collectAsState()
 
+    LaunchedEffect(locationState) {
+        locationState?.let { location ->
+            observationViewModel.updateCurrentLocation(
+                latitude = location.latitude,
+                longitude = location.longitude
+            )
+        }
+    }
     Scaffold(
         topBar = {
             MBTopAppBar(
@@ -92,6 +109,7 @@ fun ObservationScreenContent(
     onEvent: (ObservationScreenEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
+
     HandleApplySuccessBottomSheet(
         birdName = uiState.birdName,
         note = uiState.note,
@@ -102,13 +120,23 @@ fun ObservationScreenContent(
         isAddObservationBottomSheetOpen = uiState.isAddObservationBottomSheetOpen,
         onBottomSheetClose = { onEvent(ObservationScreenEvent.CloseAddObservationBottomSheet) },
         onDone = { onEvent(ObservationScreenEvent.CloseAddObservationBottomSheet) },
-        latitude = uiState.latitude,
-        longitude = uiState.longitude,
         onSaveClick = { onEvent(ObservationScreenEvent.SaveObservation) },
         onDateChange = { onEvent(ObservationScreenEvent.UpdateDate(it)) },
         onImagePathChange = { onEvent(ObservationScreenEvent.UpdateImagePath(it)) },
         selectedBodyColor = uiState.selectedBodyColor,
-        onBodyColorChange = { onEvent(ObservationScreenEvent.UpdateBodyColor(it)) }
+        onBodyColorChange = { onEvent(ObservationScreenEvent.UpdateBodyColor(it)) },
+        onLocationSelected = { lat, lng ->
+            onEvent(
+                ObservationScreenEvent.OnLocationSelected(
+                    lat,
+                    lng
+                )
+            )
+        },
+        selectedLat = uiState.selectedLatitude,
+        selectedLng = uiState.selectedLongitude,
+        currentLat = uiState.currentLatitude,
+        currentLng = uiState.currentLongitude
     )
 
     Column(
@@ -145,12 +173,17 @@ fun ObservationScreenContent(
             ) {
 
                 items(uiState.observations) { observation ->
+                    val gson = Gson()
+                    val observationJson = gson.toJson(observation)
+
                     ObservationItem(
                         birdName = observation.birdName,
                         location = "San Francisco",
                         date = observation.date.toReadableDate(),
                         bodyColor = observation.bodyColor
-                    )
+                    ) {
+                        onEvent(ObservationScreenEvent.NavigateToObservationDetail(observationJson = observationJson))
+                    }
                 }
 
             }
@@ -233,8 +266,6 @@ fun ObservationItem(
 
 @Composable
 fun HandleApplySuccessBottomSheet(
-    latitude: Double,
-    longitude: Double,
     birdName: String,
     note: String,
     date: LocalDate,
@@ -247,8 +278,13 @@ fun HandleApplySuccessBottomSheet(
     onBottomSheetClose: () -> Unit,
     onDone: () -> Unit,
     onSaveClick: () -> Unit,
+    onLocationSelected: (Double, Double) -> Unit,
     onDateChange: (LocalDate) -> Unit,
     onImagePathChange: (String?) -> Unit,
+    selectedLat: Double?,
+    selectedLng: Double?,
+    currentLat: Double?,
+    currentLng: Double?,
 ) {
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(
@@ -258,6 +294,7 @@ fun HandleApplySuccessBottomSheet(
     if (isAddObservationBottomSheetOpen) {
         ModalBottomSheet(
             dragHandle = null,
+            sheetGesturesEnabled = false,
             onDismissRequest = { onBottomSheetClose() },
             sheetState = sheetState,
             modifier = Modifier.fillMaxWidth(),
@@ -272,12 +309,10 @@ fun HandleApplySuccessBottomSheet(
                     note = note,
                     onBirdNameChange = onBirdNameChange,
                     onNoteChange = onNoteChange,
-                    latitude = latitude,
-                    longitude = longitude,
                     selectedDate = date,
                     imagePath = imagePath,
                     onLocationSelected = { lat, lng ->
-
+                        onLocationSelected(lat, lng)
                     },
 
                     onCancelClick = {
@@ -299,7 +334,11 @@ fun HandleApplySuccessBottomSheet(
                     onDateChange = { onDateChange(it) },
                     onImagePathChange = { onImagePathChange(it) },
                     selectedBodyColor = selectedBodyColor,
-                    onBodyColorChange = { onBodyColorChange(it) }
+                    onBodyColorChange = { onBodyColorChange(it) },
+                    selectedLat = selectedLat,
+                    selectedLng = selectedLng,
+                    currentLat = currentLat,
+                    currentLng = currentLng,
                 )
             }
         }
@@ -312,7 +351,9 @@ private fun ObservationScreenContentPreview() {
     MyanmarBirdPreview {
         ObservationScreenContent(
             uiState = ObservationScreenState(),
-            onEvent = {})
+            onEvent = {},
+            modifier = Modifier
+        )
     }
 }
 

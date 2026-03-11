@@ -14,10 +14,15 @@ sealed interface Destinations {
     data object Home : Destinations
 
     @Serializable
+    data class Detail(val birdJsonString: String) : Destinations
+
+    @Serializable
     data object Observation : Destinations
 
     @Serializable
-    data class Detail(val birdJsonString: String) : Destinations
+    data class ObservationDetail(val observationJsonString: String) : Destinations
+
+
 
 
 }

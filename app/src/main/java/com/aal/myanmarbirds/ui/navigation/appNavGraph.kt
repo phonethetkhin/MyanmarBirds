@@ -8,7 +8,9 @@ import com.aal.myanmarbirds.ui.feature.detail.viewmodel.DetailScreenEvent
 import com.aal.myanmarbirds.ui.feature.home.screen.HomeScreen
 import com.aal.myanmarbirds.ui.feature.home.screen.OnboardingScreen
 import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeScreenEvent
+import com.aal.myanmarbirds.ui.feature.observations.screen.ObservationDetailScreen
 import com.aal.myanmarbirds.ui.feature.observations.screen.ObservationScreen
+import com.aal.myanmarbirds.ui.feature.observations.viewmodel.ObservationDetailScreenEvent
 import com.aal.myanmarbirds.ui.feature.observations.viewmodel.ObservationScreenEvent
 
 fun NavGraphBuilder.appNavGraph(
@@ -16,8 +18,9 @@ fun NavGraphBuilder.appNavGraph(
 ) {
     addOnBoarding(navigator)
     addHome(navigator)
-    addObservation(navigator)
     addDetail(navigator)
+    addObservation(navigator)
+    addObservationDetail(navigator)
 
 }
 
@@ -49,20 +52,6 @@ fun NavGraphBuilder.addHome(
     }
 }
 
-fun NavGraphBuilder.addObservation(
-    navigator: Navigator
-) {
-    composable<Destinations.Observation> {
-        ObservationScreen{event ->
-            when(event){
-                is ObservationScreenEvent.BackPressed -> navigator.navigateUp()
-                else -> {}
-            }
-
-        }
-    }
-}
-
 fun NavGraphBuilder.addDetail(
     navigator: Navigator
 ) {
@@ -78,4 +67,38 @@ fun NavGraphBuilder.addDetail(
         }
     }
 }
+
+fun NavGraphBuilder.addObservation(
+    navigator: Navigator
+) {
+    composable<Destinations.Observation> {
+        ObservationScreen { event ->
+            when (event) {
+                is ObservationScreenEvent.BackPressed -> navigator.navigateUp()
+                is ObservationScreenEvent.NavigateToObservationDetail -> navigator.navigateToObservationDetail(
+                    observationJsonString = event.observationJson
+                )
+
+                else -> {}
+            }
+
+        }
+    }
+}
+
+fun NavGraphBuilder.addObservationDetail(
+    navigator: Navigator
+) {
+    composable<Destinations.ObservationDetail> {
+        val destination = it.toRoute<Destinations.ObservationDetail>()
+
+        ObservationDetailScreen(observationJsonString = destination.observationJsonString) { event ->
+            when (event) {
+                ObservationDetailScreenEvent.BackPressed -> navigator.navigateUp()
+            }
+        }
+    }
+}
+
+
 

@@ -9,6 +9,7 @@ interface Navigator {
     fun navigateToOnBoarding()
     fun navigateToObservation()
     fun navigateToDetail(birdJsonString: String)
+    fun navigateToObservationDetail(observationJsonString: String)
 
 }
 

@@ -88,6 +88,10 @@ dependencies {
 
     //map
     implementation("org.maplibre.gl:android-sdk:13.0.0")
+
+    //fusedlocation
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
     //compression
     implementation("androidx.exifinterface:exifinterface:1.4.2")
 

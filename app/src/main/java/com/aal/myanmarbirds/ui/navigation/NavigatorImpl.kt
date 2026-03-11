@@ -19,5 +19,9 @@ class NavigatorImpl(private val navController: NavController) : Navigator {
         navController.navigate(Destinations.Detail(birdJsonString = birdJsonString))
     }
 
+    override fun navigateToObservationDetail(observationJsonString: String) {
+        navController.navigate(Destinations.ObservationDetail(observationJsonString = observationJsonString))
+    }
+
 
 }
