@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,8 @@ import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.aal.myanmarbirds.util.debugAddressFields
+import com.aal.myanmarbirds.util.getLocationName
 import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraPosition
@@ -42,9 +45,12 @@ import org.maplibre.android.maps.Style
 @Composable
 fun LocationPickerMap(
     selectedLatitude: Double?,
+    resetTrigger: Int,
+    onReset: () -> Unit,
     currentLatitude: Double?,
     selectedLongitude: Double?,
     currentLongitude: Double?,
+    onFetchCurrentLoc: () -> Unit,
     onLocationSelected: (Double, Double) -> Unit = { _, _ -> }
 ) {
 
@@ -58,8 +64,8 @@ fun LocationPickerMap(
 
     var mapRef by remember { mutableStateOf<MapLibreMap?>(null) }
     var markerRef by remember { mutableStateOf<Marker?>(null) }
-    var styleRef by remember { mutableStateOf<Style?>(null) }
     var isMapReady by remember { mutableStateOf(false) }
+
 
     val mapTilerKey = "UE0iWVkk5q3sPd9VyYbv"
     val selectedLocation =
@@ -106,15 +112,18 @@ fun LocationPickerMap(
                     .position(newPosition)
                     .title("Bird Found")
             )
+            val locationName = getLocationName(context, newPosition.latitude, newPosition.longitude)
+            debugAddressFields(context, newPosition.latitude, newPosition.longitude)
 
             Log.e("testASDF", "Marker updated to: $newPosition")
+            Log.e("testASDF", "LocationName: $locationName")
         } catch (e: Exception) {
             Log.e("testASDF", "Error updating marker")
         }
     }
 
-    fun moveToLocation(map: MapLibreMap, location: LatLng) {
-        Log.e("testASDF", "moveToLocation, $location")
+    fun moveToLocation(map: MapLibreMap, location: LatLng, force: Boolean = false) {
+        Log.e("testASDF", "moveToLocation, $location, force=$force")
 
         if (!isMapReady) {
             Log.e("testASDF", "Map not ready, skipping move")
@@ -122,24 +131,35 @@ fun LocationPickerMap(
         }
 
         try {
-            // Animate camera
+            // First, set camera position directly to ensure it moves
+            map.cameraPosition = CameraPosition.Builder()
+                .target(location)
+                .zoom(15.0)
+                .build()
+
+            // Update marker
+            updateMarkerPosition(map, location)
+
+            // Also animate for smoothness
             map.animateCamera(
                 CameraUpdateFactory.newLatLngZoom(location, 15.0),
-                500, // duration in ms
+                500,
                 object : MapLibreMap.CancelableCallback {
                     override fun onCancel() {
                         Log.e("testASDF", "Camera animation cancelled")
                     }
 
                     override fun onFinish() {
-                        // Update marker after camera animation completes
-                        updateMarkerPosition(map, location)
+                        Log.e("testASDF", "Camera animation finished")
                         onLocationSelected(location.latitude, location.longitude)
                     }
                 }
             )
+
+            Log.e("testASDF", "Camera moved successfully to: $location")
         } catch (e: Exception) {
-            Log.e("testASDF", "Error moving camera")
+            Log.e("testASDF", "Error moving camera: ${e.message}")
+            e.printStackTrace()
         }
     }
 
@@ -150,7 +170,6 @@ fun LocationPickerMap(
             Style.Builder()
                 .fromUri("https://api.maptiler.com/maps/streets/style.json?key=$mapTilerKey")
         ) { style ->
-            styleRef = style
             isMapReady = true
 
             // Set camera position
@@ -192,6 +211,38 @@ fun LocationPickerMap(
             Log.e("testASDF", "Map initialized successfully")
         }
     }
+
+    // Common function to handle reset to current location
+    fun resetToCurrentLocation() {
+        Log.e("testASDF", "resetToCurrentLocation called")
+
+        if (currentLatitude != null && currentLongitude != null && isMapReady) {
+            mapRef?.let { map ->
+                val location = LatLng(currentLatitude, currentLongitude)
+                Log.e("testASDF", "Moving to current location: $location")
+                // Increment trigger to force movement even if coordinates haven't changed
+                moveToLocation(map, location, force = true)
+            }
+        }
+    }
+
+    Log.e("testASDF", "currentLat234 $currentLatitude")
+    Log.e("testASDF", "currentLat234 $currentLatitude")
+    Log.e("testASDF", "selectedLat234 $selectedLatitude")
+    Log.e("testASDF", "selectedLng234 $selectedLongitude")
+
+    // Effect to handle current location updates
+    // Effect to handle current location updates
+    LaunchedEffect(resetTrigger, currentLatitude, currentLongitude) {
+        Log.e(
+            "testASDF",
+            "LaunchedEffect triggered - currentLat: $currentLatitude, currentLng: $currentLongitude, isMapReady: $isMapReady"
+        )
+
+        // Call the reset function when the effect triggers
+        resetToCurrentLocation()
+    }
+
 
     /* ---------------- UI ---------------- */
 
@@ -262,11 +313,8 @@ fun LocationPickerMap(
             /* ---------------- My Location Button ---------------- */
             IconButton(
                 onClick = {
-                    mapRef?.let { map ->
-                        Log.e("testASDF", "CurrentLocation, $selectedLocation")
-
-                        moveToLocation(map, selectedLocation)
-                    }
+                    onFetchCurrentLoc()
+                    onReset()
                 },
                 modifier = Modifier
                     .align(Alignment.BottomStart)

@@ -2,6 +2,7 @@
 
 package com.aal.myanmarbirds.ui.feature.observations.screen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,13 +75,22 @@ fun ObservationScreen(
     RequestLocationPermission {
         locationViewModel.fetchCurrentLocation()
     }
+
     val locationState by locationViewModel.currentLocation.collectAsState()
+    Log.e("testASDF", "LocationState $locationState")
 
     LaunchedEffect(locationState) {
         locationState?.let { location ->
             observationViewModel.updateCurrentLocation(
                 latitude = location.latitude,
                 longitude = location.longitude
+            )
+
+            observationViewModel.onEvent(
+                ObservationScreenEvent.OnLocationSelected(
+                    location.latitude,
+                    location.longitude
+                )
             )
         }
     }
@@ -98,6 +108,9 @@ fun ObservationScreen(
         ObservationScreenContent(
             uiState = state,
             onEvent = observationViewModel::onEvent,
+            onFetchCurrentLoc = {
+                locationViewModel.fetchCurrentLocation()
+            },
             modifier = Modifier.padding(innerPadding)
         )
     }
@@ -107,6 +120,7 @@ fun ObservationScreen(
 fun ObservationScreenContent(
     uiState: ObservationScreenState,
     onEvent: (ObservationScreenEvent) -> Unit,
+    onFetchCurrentLoc: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -133,6 +147,7 @@ fun ObservationScreenContent(
                 )
             )
         },
+        onFetchCurrentLoc = onFetchCurrentLoc,
         selectedLat = uiState.selectedLatitude,
         selectedLng = uiState.selectedLongitude,
         currentLat = uiState.currentLatitude,
@@ -278,6 +293,7 @@ fun HandleApplySuccessBottomSheet(
     onBottomSheetClose: () -> Unit,
     onDone: () -> Unit,
     onSaveClick: () -> Unit,
+    onFetchCurrentLoc: () -> Unit,
     onLocationSelected: (Double, Double) -> Unit,
     onDateChange: (LocalDate) -> Unit,
     onImagePathChange: (String?) -> Unit,
@@ -311,6 +327,7 @@ fun HandleApplySuccessBottomSheet(
                     onNoteChange = onNoteChange,
                     selectedDate = date,
                     imagePath = imagePath,
+                    onFetchCurrentLoc = onFetchCurrentLoc,
                     onLocationSelected = { lat, lng ->
                         onLocationSelected(lat, lng)
                     },
@@ -352,7 +369,8 @@ private fun ObservationScreenContentPreview() {
         ObservationScreenContent(
             uiState = ObservationScreenState(),
             onEvent = {},
-            modifier = Modifier
+            modifier = Modifier,
+            onFetchCurrentLoc = {}
         )
     }
 }

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.location.Location
 import android.os.Looper
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import com.google.android.gms.location.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,7 @@ class LocationViewModel(app: Application) : AndroidViewModel(app) {
 
     @SuppressLint("MissingPermission")
     fun fetchCurrentLocation() {
+        Log.e("testASDF", "FetchLocation called")
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
             1000L

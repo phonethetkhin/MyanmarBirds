@@ -57,17 +57,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.aal.myanmarbirds.ui.feature.components.BodyColors
 import com.aal.myanmarbirds.ui.feature.components.SegmentedColorSelector
-import com.aal.myanmarbirds.ui.feature.observations.viewmodel.LocationViewModel
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
-import com.aal.myanmarbirds.util.RequestLocationPermission
 import com.aal.myanmarbirds.util.clickable
 import java.io.File
 import java.io.FileOutputStream
@@ -91,6 +86,7 @@ fun AddObservationBottomSheet(
     onImagePathChange: (String?) -> Unit,
     onBirdNameChange: (String) -> Unit,
     onNoteChange: (String) -> Unit,
+    onFetchCurrentLoc: () -> Unit,
     selectedBodyColor: String,
     onBodyColorChange: (String) -> Unit,
     onLocationSelected: (Double, Double) -> Unit,
@@ -100,6 +96,7 @@ fun AddObservationBottomSheet(
     val today = LocalDate.now()
     var showDatePicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    var resetTrigger by remember { mutableStateOf(0) }
 
     lateinit var tempImageUri: Uri
 
@@ -265,8 +262,11 @@ fun AddObservationBottomSheet(
                 LocationPickerMap(
                     selectedLatitude = selectedLat,
                     selectedLongitude = selectedLng,
+                    resetTrigger = resetTrigger,
                     currentLatitude = currentLat,
-                    currentLongitude = currentLng
+                    currentLongitude = currentLng,
+                    onFetchCurrentLoc = onFetchCurrentLoc,
+                    onReset = { resetTrigger++ }
                 ) { lat, lng ->
 
                     onLocationSelected(lat, lng)
@@ -277,8 +277,14 @@ fun AddObservationBottomSheet(
                     color = MyanmarBirdsColor.current.gray_100,
                 )
 
-                TextButtonRow(text = "Reset to Current Location", verticalPadding = 32.dp)
-
+                TextButtonRow(
+                    text = "Reset to Current Location",
+                    verticalPadding = 32.dp,
+                    onClick = {
+                        onFetchCurrentLoc()
+                        resetTrigger++
+                    }
+                )
                 HorizontalDivider(
                     color = MyanmarBirdsColor.current.gray_100,
                 )
@@ -548,6 +554,7 @@ private fun SectionRow(
 private fun TextButtonRow(
     text: String,
     verticalPadding: Dp,
+    onClick: () -> Unit = {}
 ) {
     Text(
         text = text,
@@ -555,7 +562,9 @@ private fun TextButtonRow(
             color = MyanmarBirdsColor.current.blue_500,
             fontWeight = FontWeight.Bold
         ),
-        modifier = Modifier.padding(vertical = verticalPadding)
+        modifier = Modifier
+            .padding(vertical = verticalPadding)
+            .clickable { onClick() }
     )
 }
 
@@ -643,7 +652,8 @@ private fun AddObservationBottomSheetPreview() {
             selectedLat = null,
             selectedLng = null,
             currentLat = null,
-            currentLng = null
+            currentLng = null,
+            onFetchCurrentLoc = {}
         ) { }
     }
 }

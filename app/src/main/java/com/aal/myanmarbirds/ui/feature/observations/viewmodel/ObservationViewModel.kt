@@ -1,5 +1,6 @@
 package com.aal.myanmarbirds.ui.feature.observations.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.aal.myanmarbirds.data.repository.home.ObservationRepository
 import com.aal.myanmarbirds.db.entities.ObservationEntity
@@ -31,6 +32,8 @@ class ObservationViewModel @Inject constructor(
     }
 
     fun updateCurrentLocation(latitude: Double, longitude: Double) {
+        Log.e("testASDF", "updateCurrLoc Called $latitude, $longitude")
+
         updateState { currentState ->
             currentState.copy(
                 currentLatitude = latitude,
@@ -75,6 +78,20 @@ class ObservationViewModel @Inject constructor(
                 it.copy(
                     isAddObservationBottomSheetOpen = false,
                 )
+            }
+
+            is ObservationScreenEvent.ResetToCurrentLocation -> {
+                val currentLat = uiState.value.currentLatitude
+                val currentLng = uiState.value.currentLongitude
+
+                if (currentLat != null && currentLng != null) {
+                    updateState {
+                        it.copy(
+                            selectedLatitude = currentLat,
+                            selectedLongitude = currentLng
+                        )
+                    }
+                }
             }
 
             else -> sendEvent(event)
@@ -140,7 +157,7 @@ sealed class ObservationScreenEvent : BaseUiEvent {
     data class UpdateDate(val date: LocalDate) : ObservationScreenEvent()
     data class UpdateImagePath(val path: String?) : ObservationScreenEvent()
     data class NavigateToObservationDetail(val observationJson: String) : ObservationScreenEvent()
-
+    data object ResetToCurrentLocation : ObservationScreenEvent()
 
 }
 
