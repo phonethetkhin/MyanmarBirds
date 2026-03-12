@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -432,7 +433,31 @@ fun AddObservationBottomSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 32.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+
+                    Button(onClick = { onCancelClick() }) {
+                        Text(
+                            text = "Cancel",
+                            color = MyanmarBirdsColor.current.white,
+                            style = MyanmarBirdsTypographyTokens.Title.copy(fontWeight = FontWeight.Bold),
+                        )
+                    }
+
+                    Button(onClick = { onSaveClick() }) {
+                        Text(
+                            text = "Save",
+                            color = MyanmarBirdsColor.current.white,
+                            style = MyanmarBirdsTypographyTokens.Title.copy(fontWeight = FontWeight.Bold),
+                        )
+                    }
+                }
             }
         }
     }

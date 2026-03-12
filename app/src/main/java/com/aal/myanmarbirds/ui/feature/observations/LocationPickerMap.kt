@@ -115,7 +115,7 @@ fun LocationPickerMap(
             markerRef = map.addMarker(
                 MarkerOptions()
                     .position(newPosition)
-                    .title("Bird Found")
+                    .title("Bird observed.")
             )
 
 
@@ -192,7 +192,7 @@ fun LocationPickerMap(
             markerRef = map.addMarker(
                 MarkerOptions()
                     .position(selectedLocation)
-                    .title("Bird Found")
+                    .title("Bird observed.")
             )
 
             // Configure UI settings
