@@ -79,8 +79,10 @@ fun AddObservationBottomSheet(
     selectedDate: LocalDate,
     selectedLat: Double?,
     selectedLng: Double?,
+    selectedLocName: String?,
     currentLat: Double?,
     currentLng: Double?,
+    isFetchingLocation: Boolean,
     imagePath: String?,
     onDateChange: (LocalDate) -> Unit,
     onImagePathChange: (String?) -> Unit,
@@ -89,7 +91,7 @@ fun AddObservationBottomSheet(
     onFetchCurrentLoc: () -> Unit,
     selectedBodyColor: String,
     onBodyColorChange: (String) -> Unit,
-    onLocationSelected: (Double, Double) -> Unit,
+    onLocationSelected: (Double, Double, String) -> Unit,
     onCancelClick: () -> Unit = {},
     onSaveClick: () -> Unit = {}
 ) {
@@ -241,19 +243,29 @@ fun AddObservationBottomSheet(
                     color = MyanmarBirdsColor.current.gray_100,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
-                SectionRow(
-                    title = "Location",
-                    trailingContent = {
-                        if (selectedLat != null && selectedLng != null) {
-                            Text(
-                                text = "%.5f, %.5f".format(selectedLat, selectedLng),
-                                style = MyanmarBirdsTypographyTokens.Body.copy(
-                                    color = MyanmarBirdsColor.current.gray_800
-                                )
+                Column(
+
+                ) {
+                    Text(
+                        text = "Location",
+                        style = MyanmarBirdsTypographyTokens.Body.copy(
+                            color = MyanmarBirdsColor.current.gray_800,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    if (selectedLat != null && selectedLng != null) {
+                        Text(
+                            text = "$selectedLocName\nLat: %.5f, Lng: %.5f".format(
+                                selectedLat,
+                                selectedLng
+                            ),
+                            style = MyanmarBirdsTypographyTokens.Body.copy(
+                                color = MyanmarBirdsColor.current.gray_800
                             )
-                        }
+                        )
                     }
-                )
+                }
 
                 HorizontalDivider(
                     color = MyanmarBirdsColor.current.gray_100,
@@ -265,11 +277,12 @@ fun AddObservationBottomSheet(
                     resetTrigger = resetTrigger,
                     currentLatitude = currentLat,
                     currentLongitude = currentLng,
+                    isFetchingLocation = isFetchingLocation,
                     onFetchCurrentLoc = onFetchCurrentLoc,
                     onReset = { resetTrigger++ }
-                ) { lat, lng ->
+                ) { lat, lng, locName ->
 
-                    onLocationSelected(lat, lng)
+                    onLocationSelected(lat, lng, locName)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -279,7 +292,7 @@ fun AddObservationBottomSheet(
 
                 TextButtonRow(
                     text = "Reset to Current Location",
-                    verticalPadding = 32.dp,
+                    verticalPadding = 8.dp,
                     onClick = {
                         onFetchCurrentLoc()
                         resetTrigger++
@@ -300,42 +313,44 @@ fun AddObservationBottomSheet(
                 if (imagePath == null) {
 
                     // SHOW ADD PHOTO TEXT
-                    Text(
-                        text = "Add Photo",
-                        style = MyanmarBirdsTypographyTokens.Body.copy(
-                            color = MyanmarBirdsColor.current.blue_500,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier
-                            .padding(vertical = 32.dp)
-                            .clickable {
-                                showPhotoChooser(
-                                    context = context,
-                                    onCamera = {
-                                        cameraPermissionLauncher.launch(
-                                            Manifest.permission.CAMERA
-                                        )
-                                    },
-                                    onGallery = {
-                                        val permission =
-                                            if (Build.VERSION.SDK_INT >= 33)
-                                                Manifest.permission.READ_MEDIA_IMAGES
-                                            else
-                                                Manifest.permission.READ_EXTERNAL_STORAGE
+                    TextButton(
+                        onClick = {
+                            showPhotoChooser(
+                                context = context,
+                                onCamera = {
+                                    cameraPermissionLauncher.launch(
+                                        Manifest.permission.CAMERA
+                                    )
+                                },
+                                onGallery = {
+                                    val permission =
+                                        if (Build.VERSION.SDK_INT >= 33)
+                                            Manifest.permission.READ_MEDIA_IMAGES
+                                        else
+                                            Manifest.permission.READ_EXTERNAL_STORAGE
 
-                                        if (ContextCompat.checkSelfPermission(
-                                                context,
-                                                permission
-                                            ) == PackageManager.PERMISSION_GRANTED
-                                        ) {
-                                            galleryLauncher.launch("image/*")
-                                        } else {
-                                            galleryPermissionLauncher.launch(permission)
-                                        }
+                                    if (ContextCompat.checkSelfPermission(
+                                            context,
+                                            permission
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        galleryLauncher.launch("image/*")
+                                    } else {
+                                        galleryPermissionLauncher.launch(permission)
                                     }
-                                )
-                            }
-                    )
+                                }
+                            )
+                        },
+                        modifier = Modifier.padding(vertical = 32.dp)
+                    ) {
+                        Text(
+                            text = "Add Photo",
+                            style = MyanmarBirdsTypographyTokens.Body.copy(
+                                color = MyanmarBirdsColor.current.blue_500,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
 
                 } else {
 
@@ -556,16 +571,18 @@ private fun TextButtonRow(
     verticalPadding: Dp,
     onClick: () -> Unit = {}
 ) {
-    Text(
-        text = text,
-        style = MyanmarBirdsTypographyTokens.Body.copy(
-            color = MyanmarBirdsColor.current.blue_500,
-            fontWeight = FontWeight.Bold
-        ),
-        modifier = Modifier
-            .padding(vertical = verticalPadding)
-            .clickable { onClick() }
-    )
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.padding(vertical = verticalPadding)
+    ) {
+        Text(
+            text = text,
+            style = MyanmarBirdsTypographyTokens.Body.copy(
+                color = MyanmarBirdsColor.current.blue_500,
+                fontWeight = FontWeight.Bold
+            )
+        )
+    }
 }
 
 @Composable
@@ -641,7 +658,7 @@ private fun AddObservationBottomSheetPreview() {
             note = "",
             onBirdNameChange = {},
             onNoteChange = {},
-            onLocationSelected = {} as (Double, Double) -> Unit,
+            onLocationSelected = {} as (Double, Double, String) -> Unit,
             onCancelClick = {},
             selectedDate = LocalDate.now(),
             imagePath = null,
@@ -653,7 +670,9 @@ private fun AddObservationBottomSheetPreview() {
             selectedLng = null,
             currentLat = null,
             currentLng = null,
-            onFetchCurrentLoc = {}
+            onFetchCurrentLoc = {},
+            selectedLocName = "",
+            isFetchingLocation = false
         ) { }
     }
 }

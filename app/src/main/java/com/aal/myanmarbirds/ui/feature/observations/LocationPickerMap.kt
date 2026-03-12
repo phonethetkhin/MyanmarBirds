@@ -5,18 +5,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -30,8 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.aal.myanmarbirds.util.debugAddressFields
 import com.aal.myanmarbirds.util.getLocationName
 import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
@@ -50,8 +54,9 @@ fun LocationPickerMap(
     currentLatitude: Double?,
     selectedLongitude: Double?,
     currentLongitude: Double?,
+    isFetchingLocation: Boolean,
     onFetchCurrentLoc: () -> Unit,
-    onLocationSelected: (Double, Double) -> Unit = { _, _ -> }
+    onLocationSelected: (Double, Double, String) -> Unit = { _, _, _ -> },
 ) {
 
     val context = LocalContext.current
@@ -112,11 +117,9 @@ fun LocationPickerMap(
                     .position(newPosition)
                     .title("Bird Found")
             )
-            val locationName = getLocationName(context, newPosition.latitude, newPosition.longitude)
-            debugAddressFields(context, newPosition.latitude, newPosition.longitude)
+
 
             Log.e("testASDF", "Marker updated to: $newPosition")
-            Log.e("testASDF", "LocationName: $locationName")
         } catch (e: Exception) {
             Log.e("testASDF", "Error updating marker")
         }
@@ -151,7 +154,9 @@ fun LocationPickerMap(
 
                     override fun onFinish() {
                         Log.e("testASDF", "Camera animation finished")
-                        onLocationSelected(location.latitude, location.longitude)
+                        val locationName =
+                            getLocationName(context, location.latitude, location.longitude)
+                        onLocationSelected(location.latitude, location.longitude, locationName)
                     }
                 }
             )
@@ -203,7 +208,9 @@ fun LocationPickerMap(
             map.addOnMapClickListener { point ->
                 if (isMapReady) {
                     updateMarkerPosition(map, point)
-                    onLocationSelected(point.latitude, point.longitude)
+                    val locationName = getLocationName(context, point.latitude, point.longitude)
+
+                    onLocationSelected(point.latitude, point.longitude, locationName)
                 }
                 true
             }
@@ -278,6 +285,34 @@ fun LocationPickerMap(
                 }
             }
         )
+        if (isFetchingLocation) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.25f)), // dim background
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF2196F3), // blue spinner
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Fetching current location...",
+                        color = Color.Black,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
 
         /* ---------------- Zoom Buttons ---------------- */
         if (isMapReady) {

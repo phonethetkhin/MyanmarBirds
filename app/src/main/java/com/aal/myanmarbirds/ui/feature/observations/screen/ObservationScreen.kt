@@ -36,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,7 @@ import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.util.RequestLocationPermission
 import com.aal.myanmarbirds.util.circleClickable
 import com.aal.myanmarbirds.util.clickable
+import com.aal.myanmarbirds.util.getLocationName
 import com.aal.myanmarbirds.util.toReadableDate
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
@@ -68,7 +70,7 @@ fun ObservationScreen(
     onEvent: (ObservationScreenEvent) -> Unit
 ) {
     val state by observationViewModel.uiState.collectAsState()
-
+    val context = LocalContext.current
     EventHandler(observationViewModel) { event ->
         onEvent(event)
     }
@@ -85,13 +87,16 @@ fun ObservationScreen(
                 latitude = location.latitude,
                 longitude = location.longitude
             )
-
+            val locationName = getLocationName(context, location.latitude, location.longitude)
             observationViewModel.onEvent(
                 ObservationScreenEvent.OnLocationSelected(
                     location.latitude,
-                    location.longitude
+                    location.longitude,
+                    locationName,
                 )
             )
+            observationViewModel.onEvent(ObservationScreenEvent.FetchCurrentLocation(false))
+
         }
     }
     Scaffold(
@@ -109,6 +114,7 @@ fun ObservationScreen(
             uiState = state,
             onEvent = observationViewModel::onEvent,
             onFetchCurrentLoc = {
+                observationViewModel.onEvent(ObservationScreenEvent.FetchCurrentLocation(true))
                 locationViewModel.fetchCurrentLocation()
             },
             modifier = Modifier.padding(innerPadding)
@@ -139,19 +145,22 @@ fun ObservationScreenContent(
         onImagePathChange = { onEvent(ObservationScreenEvent.UpdateImagePath(it)) },
         selectedBodyColor = uiState.selectedBodyColor,
         onBodyColorChange = { onEvent(ObservationScreenEvent.UpdateBodyColor(it)) },
-        onLocationSelected = { lat, lng ->
+        onLocationSelected = { lat, lng, locName ->
             onEvent(
                 ObservationScreenEvent.OnLocationSelected(
                     lat,
-                    lng
+                    lng,
+                    locName
                 )
             )
         },
         onFetchCurrentLoc = onFetchCurrentLoc,
         selectedLat = uiState.selectedLatitude,
         selectedLng = uiState.selectedLongitude,
+        selectedLocName = uiState.selectedLocName,
         currentLat = uiState.currentLatitude,
-        currentLng = uiState.currentLongitude
+        currentLng = uiState.currentLongitude,
+        isFetchingLocation = uiState.isFetchingLocation
     )
 
     Column(
@@ -294,13 +303,15 @@ fun HandleApplySuccessBottomSheet(
     onDone: () -> Unit,
     onSaveClick: () -> Unit,
     onFetchCurrentLoc: () -> Unit,
-    onLocationSelected: (Double, Double) -> Unit,
+    onLocationSelected: (Double, Double, String) -> Unit,
     onDateChange: (LocalDate) -> Unit,
     onImagePathChange: (String?) -> Unit,
     selectedLat: Double?,
     selectedLng: Double?,
+    selectedLocName: String?,
     currentLat: Double?,
     currentLng: Double?,
+    isFetchingLocation: Boolean,
 ) {
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(
@@ -328,8 +339,8 @@ fun HandleApplySuccessBottomSheet(
                     selectedDate = date,
                     imagePath = imagePath,
                     onFetchCurrentLoc = onFetchCurrentLoc,
-                    onLocationSelected = { lat, lng ->
-                        onLocationSelected(lat, lng)
+                    onLocationSelected = { lat, lng, locName ->
+                        onLocationSelected(lat, lng, locName)
                     },
 
                     onCancelClick = {
@@ -354,8 +365,10 @@ fun HandleApplySuccessBottomSheet(
                     onBodyColorChange = { onBodyColorChange(it) },
                     selectedLat = selectedLat,
                     selectedLng = selectedLng,
+                    selectedLocName = selectedLocName,
                     currentLat = currentLat,
                     currentLng = currentLng,
+                    isFetchingLocation = isFetchingLocation
                 )
             }
         }

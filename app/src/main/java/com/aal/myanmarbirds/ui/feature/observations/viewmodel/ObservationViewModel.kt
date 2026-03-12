@@ -44,6 +44,12 @@ class ObservationViewModel @Inject constructor(
 
     fun onEvent(event: ObservationScreenEvent) {
         when (event) {
+            is ObservationScreenEvent.FetchCurrentLocation -> updateState {
+                it.copy(
+                    isFetchingLocation = event.isFetchingLocation
+                )
+            }
+
             is ObservationScreenEvent.OnBirdNameChange -> updateState { it.copy(birdName = event.birdName) }
             is ObservationScreenEvent.OnNoteChange -> updateState { it.copy(note = event.note) }
             is ObservationScreenEvent.UpdateBodyColorFilter -> updateState {
@@ -53,7 +59,8 @@ class ObservationViewModel @Inject constructor(
             is ObservationScreenEvent.OnLocationSelected -> updateState {
                 it.copy(
                     selectedLatitude = event.lat,
-                    selectedLongitude = event.lng
+                    selectedLongitude = event.lng,
+                    selectedLocName = event.locName,
                 )
             }
 
@@ -130,11 +137,13 @@ class ObservationViewModel @Inject constructor(
 data class ObservationScreenState(
     val isLoading: Boolean = false,
     val birdName: String = "",
+    val selectedLocName: String? = null,
     val selectedLatitude: Double? = null,
     val selectedLongitude: Double? = null,
     val currentLatitude: Double? = null,
     val currentLongitude: Double? = null,
     val note: String = "",
+    val isFetchingLocation: Boolean = false,
     val selectedBodyColor: String = "",
     val selectedBodyColorFilter: String = "",
     val selectedDate: LocalDate = LocalDate.now(),
@@ -151,13 +160,16 @@ sealed class ObservationScreenEvent : BaseUiEvent {
     data object SaveObservation : ObservationScreenEvent()
     data class OnBirdNameChange(val birdName: String) : ObservationScreenEvent()
     data class OnNoteChange(val note: String) : ObservationScreenEvent()
-    data class OnLocationSelected(val lat: Double, val lng: Double) : ObservationScreenEvent()
+    data class OnLocationSelected(val lat: Double, val lng: Double, val locName: String) :
+        ObservationScreenEvent()
+
     data object OpenAddObservationBottomSheet : ObservationScreenEvent()
     data object CloseAddObservationBottomSheet : ObservationScreenEvent()
     data class UpdateDate(val date: LocalDate) : ObservationScreenEvent()
     data class UpdateImagePath(val path: String?) : ObservationScreenEvent()
     data class NavigateToObservationDetail(val observationJson: String) : ObservationScreenEvent()
     data object ResetToCurrentLocation : ObservationScreenEvent()
+    data class FetchCurrentLocation(val isFetchingLocation: Boolean) : ObservationScreenEvent()
 
 }
 
