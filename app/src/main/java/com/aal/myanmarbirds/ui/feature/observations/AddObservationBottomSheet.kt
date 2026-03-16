@@ -37,6 +37,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -168,6 +169,13 @@ fun AddObservationBottomSheet(
         DateTimeFormatter.ofPattern("MMM d, yyyy")
     }
 
+    val isValid =
+        birdName.isNotBlank() &&
+                selectedBodyColor.isNotBlank() &&
+                selectedLat != null &&
+                selectedLng != null &&
+                imagePath != null
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -180,7 +188,12 @@ fun AddObservationBottomSheet(
         item {
             SheetHeader(
                 onCancelClick = onCancelClick,
-                onSaveClick = onSaveClick
+                onSaveClick = onSaveClick,
+                birdName = birdName,
+                selectedBodyColor = selectedBodyColor,
+                selectedLat = selectedLat,
+                selectedLng = selectedLng,
+                imagePath = imagePath
             )
         }
 
@@ -205,14 +218,14 @@ fun AddObservationBottomSheet(
                     title = "Date",
                     trailingContent = {
                         Surface(
-                            color = MyanmarBirdsColor.current.gray_100,
+                            color = MyanmarBirdsColor.current.blue_500,
                             shape = RoundedCornerShape(8.dp),
                             onClick = { showDatePicker = true }
                         ) {
                             Text(
                                 text = selectedDate.format(formatter),
                                 style = MyanmarBirdsTypographyTokens.Body.copy(
-                                    color = MyanmarBirdsColor.current.gray_900,
+                                    color = MyanmarBirdsColor.current.white,
                                     fontWeight = FontWeight.Bold
                                 ),
                                 modifier = Modifier.padding(8.dp)
@@ -450,11 +463,54 @@ fun AddObservationBottomSheet(
                         )
                     }
 
-                    Button(onClick = { onSaveClick() }) {
+                    Button(
+                        onClick = {
+
+                            when {
+                                birdName.isBlank() -> {
+                                    Toast.makeText(
+                                        context,
+                                        "Bird name is required",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                selectedBodyColor.isBlank() -> {
+                                    Toast.makeText(
+                                        context,
+                                        "Please select body color",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                selectedLat == null || selectedLng == null -> {
+                                    Toast.makeText(
+                                        context,
+                                        "Please select location",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                imagePath == null -> {
+                                    Toast.makeText(
+                                        context,
+                                        "Please add a photo",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                else -> {
+                                    onSaveClick()
+                                }
+                            }
+                        }
+                    ) {
                         Text(
                             text = "Save",
                             color = MyanmarBirdsColor.current.white,
-                            style = MyanmarBirdsTypographyTokens.Title.copy(fontWeight = FontWeight.Bold),
+                            style = MyanmarBirdsTypographyTokens.Title.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
                         )
                     }
                 }
@@ -469,7 +525,17 @@ fun AddObservationBottomSheet(
             initialSelectedDateMillis = selectedDate
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant()
-                .toEpochMilli()
+                .toEpochMilli(),
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    val todayMillis = LocalDate.now()
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
+
+                    return utcTimeMillis <= todayMillis
+                }
+            }
         )
 
         DatePickerDialog(
@@ -523,9 +589,15 @@ fun showPhotoChooser(
 
 @Composable
 private fun SheetHeader(
+    birdName: String,
+    selectedBodyColor: String,
+    selectedLat: Double?,
+    selectedLng: Double?,
+    imagePath: String?,
     onCancelClick: () -> Unit,
     onSaveClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -544,7 +616,45 @@ private fun SheetHeader(
             text = "Save",
             color = MyanmarBirdsColor.current.close_blue,
             style = MyanmarBirdsTypographyTokens.Title.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.clickable { onSaveClick() }
+            modifier = Modifier.clickable {
+                when {
+                    birdName.isBlank() -> {
+                        Toast.makeText(
+                            context,
+                            "Bird name is required",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    selectedBodyColor.isBlank() -> {
+                        Toast.makeText(
+                            context,
+                            "Please select body color",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    selectedLat == null || selectedLng == null -> {
+                        Toast.makeText(
+                            context,
+                            "Please select location",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    imagePath == null -> {
+                        Toast.makeText(
+                            context,
+                            "Please add a photo",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    else -> {
+                        onSaveClick()
+                    }
+                }
+            }
         )
     }
 }

@@ -40,9 +40,7 @@ import com.aal.myanmarbirds.ui.feature.components.SegmentedSearchModePicker
 import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeScreenEvent
 import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeScreenState
 import com.aal.myanmarbirds.ui.feature.home.viewmodel.HomeViewModel
-import com.aal.myanmarbirds.ui.feature.observations.viewmodel.LocationViewModel
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
-import com.aal.myanmarbirds.util.RequestLocationPermission
 import com.google.gson.Gson
 
 

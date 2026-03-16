@@ -1,7 +1,6 @@
 package com.aal.myanmarbirds.ui.feature.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,9 +24,8 @@ import androidx.compose.ui.unit.sp
 fun MemoButton(onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 32.dp, bottom = 16.dp), // similar to SwiftUI's bottom bar spacing
-        horizontalArrangement = Arrangement.Start
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.End
     ) {
         Button(
             onClick = onClick,
