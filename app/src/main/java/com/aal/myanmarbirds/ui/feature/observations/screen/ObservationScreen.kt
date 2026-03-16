@@ -139,7 +139,9 @@ fun ObservationScreenContent(
         onNoteChange = { onEvent(ObservationScreenEvent.OnNoteChange(it)) },
         isAddObservationBottomSheetOpen = uiState.isAddObservationBottomSheetOpen,
         onBottomSheetClose = { onEvent(ObservationScreenEvent.CloseAddObservationBottomSheet) },
-        onDone = { onEvent(ObservationScreenEvent.CloseAddObservationBottomSheet) },
+        onDone = {
+            onEvent(ObservationScreenEvent.CancelObservation)
+        },
         onSaveClick = { onEvent(ObservationScreenEvent.SaveObservation) },
         onDateChange = { onEvent(ObservationScreenEvent.UpdateDate(it)) },
         onImagePathChange = { onEvent(ObservationScreenEvent.UpdateImagePath(it)) },
@@ -342,7 +344,6 @@ fun HandleApplySuccessBottomSheet(
                     onLocationSelected = { lat, lng, locName ->
                         onLocationSelected(lat, lng, locName)
                     },
-
                     onCancelClick = {
                         scope.launch {
                             sheetState.hide()
@@ -354,10 +355,8 @@ fun HandleApplySuccessBottomSheet(
                         scope.launch {
                             sheetState.hide()
                             onBottomSheetClose()
-                            onDone()
                             onSaveClick()
                         }
-
                     },
                     onDateChange = { onDateChange(it) },
                     onImagePathChange = { onImagePathChange(it) },

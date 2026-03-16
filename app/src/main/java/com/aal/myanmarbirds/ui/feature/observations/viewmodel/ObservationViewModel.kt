@@ -1,5 +1,6 @@
 package com.aal.myanmarbirds.ui.feature.observations.viewmodel
 
+import android.app.Application
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.aal.myanmarbirds.data.repository.home.ObservationRepository
@@ -7,6 +8,7 @@ import com.aal.myanmarbirds.db.entities.ObservationEntity
 import com.aal.myanmarbirds.ui.base.BaseUiEvent
 import com.aal.myanmarbirds.ui.base.BaseUiState
 import com.aal.myanmarbirds.ui.base.BaseViewModel
+import com.aal.myanmarbirds.util.getLocationName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.launch
@@ -15,6 +17,7 @@ import java.time.ZoneId
 
 @HiltViewModel
 class ObservationViewModel @Inject constructor(
+    private val context: Application,
     private val observationRepo: ObservationRepository,
 ) : BaseViewModel<ObservationScreenState, ObservationScreenEvent>(ObservationScreenState()) {
 
@@ -68,7 +71,14 @@ class ObservationViewModel @Inject constructor(
                 it.copy(selectedBodyColor = event.color)
             }
 
-            is ObservationScreenEvent.SaveObservation -> saveObservation()
+            is ObservationScreenEvent.SaveObservation -> {
+                saveObservation()
+            }
+
+            is ObservationScreenEvent.CancelObservation -> {
+                resetObservationForm() // Reset form on cancel
+            }
+
             is ObservationScreenEvent.OpenAddObservationBottomSheet -> updateState {
                 it.copy(
                     isAddObservationBottomSheetOpen = true,
@@ -120,6 +130,7 @@ class ObservationViewModel @Inject constructor(
                     .atStartOfDay(ZoneId.systemDefault())
                     .toInstant()
                     .toEpochMilli(),
+                locName = state.selectedLocName ?: getLocationName(context, 16.840, 96.200),
                 latitude = state.selectedLatitude,
                 longitude = state.selectedLongitude,
                 imagePath = state.imagePath,
@@ -127,9 +138,31 @@ class ObservationViewModel @Inject constructor(
             )
 
             observationRepo.insertObservation(observation)
+            resetObservationForm() // Reset form after save
+
         }
     }
 
+    private fun resetObservationForm() {
+        updateState {
+            it.copy(
+                birdName = "",
+                note = "",
+                selectedLocName = null,
+                selectedLatitude = null,
+                selectedLongitude = null,
+                currentLatitude = null,
+                currentLongitude = null,
+                selectedBodyColor = "",
+                selectedDate = LocalDate.now(),
+                imagePath = null,
+                isFetchingLocation = false
+                // Keep currentLatitude and currentLongitude as they are
+                // Keep observations list as it is
+                // Keep selectedBodyColorFilter as it is
+            )
+        }
+    }
 
 }
 
@@ -138,8 +171,8 @@ data class ObservationScreenState(
     val isLoading: Boolean = false,
     val birdName: String = "",
     val selectedLocName: String? = null,
-    val selectedLatitude: Double? = null,
-    val selectedLongitude: Double? = null,
+    val selectedLatitude: Double? = 16.840,
+    val selectedLongitude: Double? = 96.200,
     val currentLatitude: Double? = null,
     val currentLongitude: Double? = null,
     val note: String = "",
@@ -162,6 +195,8 @@ sealed class ObservationScreenEvent : BaseUiEvent {
     data class OnNoteChange(val note: String) : ObservationScreenEvent()
     data class OnLocationSelected(val lat: Double, val lng: Double, val locName: String) :
         ObservationScreenEvent()
+
+    data object CancelObservation : ObservationScreenEvent() // Add this
 
     data object OpenAddObservationBottomSheet : ObservationScreenEvent()
     data object CloseAddObservationBottomSheet : ObservationScreenEvent()

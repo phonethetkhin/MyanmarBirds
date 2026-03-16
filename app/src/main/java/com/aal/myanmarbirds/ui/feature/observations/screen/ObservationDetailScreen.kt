@@ -201,7 +201,8 @@ fun ObservationDetailPreview() {
             latitude = 111.87,
             longitude = 123.85,
             imagePath = "asdfs",
-            bodyColor = "Blue"
+            bodyColor = "Blue",
+            locName = "adsfasdf"
         )
     )
 }

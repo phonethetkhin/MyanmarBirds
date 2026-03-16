@@ -71,14 +71,23 @@ fun LocationPickerMap(
     var markerRef by remember { mutableStateOf<Marker?>(null) }
     var isMapReady by remember { mutableStateOf(false) }
 
+    // Determine which location to show on the map
+    val mapLocation =
+        remember(selectedLatitude, selectedLongitude, currentLatitude, currentLongitude) {
+            when {
+                // If we have a selected location, use that
+                selectedLatitude != null && selectedLongitude != null ->
+                    LatLng(selectedLatitude, selectedLongitude)
+                // If no selected location but we have current location, use current
+                currentLatitude != null && currentLongitude != null ->
+                    LatLng(currentLatitude, currentLongitude)
+                // Fallback to default Myanmar coordinates
+                else -> LatLng(16.840, 96.200) // Default to Yangon, Myanmar
+            }
+        }
 
     val mapTilerKey = "UE0iWVkk5q3sPd9VyYbv"
-    val selectedLocation =
-        LatLng(
-            selectedLatitude ?: currentLatitude ?: 16.840,
-            selectedLongitude ?: currentLongitude ?: 96.200
-        )
-    Log.e("testASDF", "iniCurrentLocation, ${selectedLocation}")
+    Log.e("testASDF", "Map location set to: $mapLocation")
 
     /* ---------------- Map Lifecycle ---------------- */
 
@@ -117,7 +126,6 @@ fun LocationPickerMap(
                     .position(newPosition)
                     .title("Bird observed.")
             )
-
 
             Log.e("testASDF", "Marker updated to: $newPosition")
         } catch (e: Exception) {
@@ -177,9 +185,9 @@ fun LocationPickerMap(
         ) { style ->
             isMapReady = true
 
-            // Set camera position
+            // Set camera position to the determined map location
             map.cameraPosition = CameraPosition.Builder()
-                .target(selectedLocation)
+                .target(mapLocation)
                 .zoom(14.0)
                 .build()
 
@@ -188,10 +196,10 @@ fun LocationPickerMap(
                 map.removeMarker(marker)
             }
 
-            // Add initial marker
+            // Add initial marker at the determined location
             markerRef = map.addMarker(
                 MarkerOptions()
-                    .position(selectedLocation)
+                    .position(mapLocation)
                     .title("Bird observed.")
             )
 
@@ -209,17 +217,16 @@ fun LocationPickerMap(
                 if (isMapReady) {
                     updateMarkerPosition(map, point)
                     val locationName = getLocationName(context, point.latitude, point.longitude)
-
                     onLocationSelected(point.latitude, point.longitude, locationName)
                 }
                 true
             }
 
-            Log.e("testASDF", "Map initialized successfully")
+            Log.e("testASDF", "Map initialized successfully at: $mapLocation")
         }
     }
 
-    // Common function to handle reset to current location
+    // Function to handle reset to current location
     fun resetToCurrentLocation() {
         Log.e("testASDF", "resetToCurrentLocation called")
 
@@ -227,29 +234,48 @@ fun LocationPickerMap(
             mapRef?.let { map ->
                 val location = LatLng(currentLatitude, currentLongitude)
                 Log.e("testASDF", "Moving to current location: $location")
-                // Increment trigger to force movement even if coordinates haven't changed
                 moveToLocation(map, location, force = true)
             }
         }
     }
 
-    Log.e("testASDF", "currentLat234 $currentLatitude")
-    Log.e("testASDF", "currentLat234 $currentLatitude")
-    Log.e("testASDF", "selectedLat234 $selectedLatitude")
-    Log.e("testASDF", "selectedLng234 $selectedLongitude")
+    Log.e(
+        "testASDF",
+        "Current values - currentLat: $currentLatitude, currentLng: $currentLongitude"
+    )
+    Log.e(
+        "testASDF",
+        "Selected values - selectedLat: $selectedLatitude, selectedLng: $selectedLongitude"
+    )
+    Log.e("testASDF", "Map location: $mapLocation")
 
-    // Effect to handle current location updates
-    // Effect to handle current location updates
-    LaunchedEffect(resetTrigger, currentLatitude, currentLongitude) {
+    // Effect to handle location updates
+    LaunchedEffect(
+        resetTrigger,
+        currentLatitude,
+        currentLongitude,
+        selectedLatitude,
+        selectedLongitude
+    ) {
         Log.e(
             "testASDF",
-            "LaunchedEffect triggered - currentLat: $currentLatitude, currentLng: $currentLongitude, isMapReady: $isMapReady"
+            "LaunchedEffect triggered - isMapReady: $isMapReady"
         )
 
-        // Call the reset function when the effect triggers
-        resetToCurrentLocation()
+        if (isMapReady) {
+            // If we have a selected location, move to that
+            if (selectedLatitude != null && selectedLongitude != null) {
+                mapRef?.let { map ->
+                    val location = LatLng(selectedLatitude, selectedLongitude)
+                    moveToLocation(map, location, force = true)
+                }
+            }
+            // Otherwise if resetTrigger changed, try to reset to current location
+            else if (resetTrigger > 0) {
+                resetToCurrentLocation()
+            }
+        }
     }
-
 
     /* ---------------- UI ---------------- */
 
@@ -285,11 +311,12 @@ fun LocationPickerMap(
                 }
             }
         )
+
         if (isFetchingLocation) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.25f)), // dim background
+                    .background(Color.Black.copy(alpha = 0.25f)),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -300,7 +327,7 @@ fun LocationPickerMap(
                         .padding(16.dp)
                 ) {
                     CircularProgressIndicator(
-                        color = Color(0xFF2196F3), // blue spinner
+                        color = Color(0xFF2196F3),
                         strokeWidth = 3.dp,
                         modifier = Modifier.size(48.dp)
                     )

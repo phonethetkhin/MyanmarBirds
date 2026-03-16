@@ -11,6 +11,7 @@ data class ObservationEntity(
     val birdName: String,
     val note: String,
     val date: Long,
+    val locName: String,
     val latitude: Double?,
     val longitude: Double?,
     val imagePath: String?,

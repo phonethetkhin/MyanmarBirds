@@ -3,12 +3,15 @@ package com.aal.myanmarbirds.ui.feature.observations
 import android.Manifest
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -30,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -66,12 +70,14 @@ import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
 import com.aal.myanmarbirds.util.clickable
+import com.aal.myanmarbirds.util.getLocationName
 import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,8 +108,155 @@ fun AddObservationBottomSheet(
     val context = LocalContext.current
     var resetTrigger by remember { mutableStateOf(0) }
 
+    // States for location permission handling
+    var showLocationPermissionRequest by remember { mutableStateOf(false) }
+    var showPermissionDeniedDialog by remember { mutableStateOf(false) }
+    var showEnableLocationDialog by remember { mutableStateOf(false) }
+    var pendingLocationAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     lateinit var tempImageUri: Uri
 
+    // Check if permission is permanently denied
+    val shouldShowRationale = remember {
+        shouldShowRequestPermissionRationale(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+    }
+
+    // Function to check if location is enabled
+    fun isLocationEnabled(): Boolean {
+        val locationManager =
+            context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            locationManager.isLocationEnabled
+        } else {
+            @Suppress("DEPRECATION")
+            locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+                    locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+        }
+    }
+    BackHandler { }
+
+    // Function to open location settings
+    fun openLocationSettings() {
+        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+        context.startActivity(intent)
+    }
+
+    // Permission launcher with proper handling
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        showLocationPermissionRequest = false
+        if (isGranted) {
+            // Permission granted, check if location is enabled
+            if (isLocationEnabled()) {
+                // Location is enabled, execute pending action
+                pendingLocationAction?.invoke()
+                pendingLocationAction = null
+            } else {
+                // Location is disabled, show enable location dialog
+                showEnableLocationDialog = true
+            }
+        } else {
+            // Permission denied
+            if (!shouldShowRationale) {
+                // User checked "never ask again" or denied twice
+                showPermissionDeniedDialog = true
+            } else {
+                // First time denial
+                Toast.makeText(
+                    context,
+                    "Location permission is required to get current location",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            pendingLocationAction = null
+        }
+    }
+
+    // Show permission dialog when needed
+    if (showLocationPermissionRequest) {
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    // Show settings dialog when permission is permanently denied
+    if (showPermissionDeniedDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDeniedDialog = false },
+            title = { Text("Location Permission Required") },
+            text = { Text("Location permission has been permanently denied. Please enable it in app settings to use this feature.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPermissionDeniedDialog = false
+                        openAppSettings(context)
+                    }
+                ) {
+                    Text("Open Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPermissionDeniedDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Show enable location dialog when location is disabled
+    if (showEnableLocationDialog) {
+        AlertDialog(
+            onDismissRequest = { showEnableLocationDialog = false },
+            title = { Text("Location is Disabled") },
+            text = { Text("Please enable location services to get your current location.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showEnableLocationDialog = false
+                        openLocationSettings()
+                    }
+                ) {
+                    Text("Open Location Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showEnableLocationDialog = false
+                    // Optionally, you could still execute the action without location
+                    // pendingLocationAction?.invoke()
+                    // pendingLocationAction = null
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Function to handle location fetch with permission and location check
+    fun handleLocationFetch() {
+        if (checkPermission(context)) {
+            // Permission already granted, check if location is enabled
+            if (isLocationEnabled()) {
+                // Location is enabled, fetch location
+                onFetchCurrentLoc()
+            } else {
+                // Location is disabled, show enable location dialog
+                showEnableLocationDialog = true
+            }
+        } else {
+            // Need to request permission
+            pendingLocationAction = {
+                if (isLocationEnabled()) {
+                    onFetchCurrentLoc()
+                } else {
+                    showEnableLocationDialog = true
+                }
+            }
+            showLocationPermissionRequest = true
+        }
+    }
 
     val galleryLauncher =
         rememberLauncherForActivityResult(
@@ -139,7 +292,6 @@ fun AddObservationBottomSheet(
         cameraLauncher.launch(tempImageUri)
     }
 
-
     val cameraPermissionLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -164,17 +316,9 @@ fun AddObservationBottomSheet(
             }
         }
 
-
     val formatter = remember {
         DateTimeFormatter.ofPattern("MMM d, yyyy")
     }
-
-    val isValid =
-        birdName.isNotBlank() &&
-                selectedBodyColor.isNotBlank() &&
-                selectedLat != null &&
-                selectedLng != null &&
-                imagePath != null
 
     LazyColumn(
         modifier = Modifier
@@ -257,9 +401,7 @@ fun AddObservationBottomSheet(
                     color = MyanmarBirdsColor.current.gray_100,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
-                Column(
-
-                ) {
+                Column {
                     Text(
                         text = "Location",
                         style = MyanmarBirdsTypographyTokens.Body.copy(
@@ -268,23 +410,30 @@ fun AddObservationBottomSheet(
                         )
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    if (selectedLat != null && selectedLng != null) {
-                        Text(
-                            text = "$selectedLocName\nLat: %.5f, Lng: %.5f".format(
-                                selectedLat,
-                                selectedLng
-                            ),
-                            style = MyanmarBirdsTypographyTokens.Body.copy(
-                                color = MyanmarBirdsColor.current.gray_800
-                            )
+
+                    // Safely display location with fallback values
+                    val displayLat = selectedLat ?: currentLat ?: 16.840
+                    val displayLng = selectedLng ?: currentLng ?: 96.200
+                    val locationName =
+                        getLocationName(context, 16.840, 96.200)
+                    val displayLocName = selectedLocName ?: locationName
+
+                    Text(
+                        text = "$displayLocName\nLat: %.5f, Lng: %.5f".format(
+                            displayLat,
+                            displayLng
+                        ),
+                        style = MyanmarBirdsTypographyTokens.Body.copy(
+                            color = MyanmarBirdsColor.current.gray_800
                         )
-                    }
+                    )
                 }
 
                 HorizontalDivider(
                     color = MyanmarBirdsColor.current.gray_100,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
+
                 LocationPickerMap(
                     selectedLatitude = selectedLat,
                     selectedLongitude = selectedLng,
@@ -292,10 +441,9 @@ fun AddObservationBottomSheet(
                     currentLatitude = currentLat,
                     currentLongitude = currentLng,
                     isFetchingLocation = isFetchingLocation,
-                    onFetchCurrentLoc = onFetchCurrentLoc,
+                    onFetchCurrentLoc = { handleLocationFetch() },
                     onReset = { resetTrigger++ }
                 ) { lat, lng, locName ->
-
                     onLocationSelected(lat, lng, locName)
                 }
 
@@ -307,10 +455,7 @@ fun AddObservationBottomSheet(
                 TextButtonRow(
                     text = "Reset to Current Location",
                     verticalPadding = 8.dp,
-                    onClick = {
-                        onFetchCurrentLoc()
-                        resetTrigger++
-                    }
+                    onClick = { handleLocationFetch() }
                 )
                 HorizontalDivider(
                     color = MyanmarBirdsColor.current.gray_100,
@@ -518,7 +663,7 @@ fun AddObservationBottomSheet(
         }
     }
 
-    // ✅ Date Picker Dialog
+    // Date Picker Dialog
     if (showDatePicker) {
 
         val datePickerState = rememberDatePickerState(
@@ -567,6 +712,41 @@ fun AddObservationBottomSheet(
             DatePicker(state = datePickerState)
         }
     }
+}
+
+// Add this helper function to check permission
+private fun checkPermission(context: Context): Boolean {
+    return ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+}
+
+// Helper function to check if we should show rationale
+private fun shouldShowRequestPermissionRationale(
+    context: Context,
+    permission: String
+): Boolean {
+    return when {
+        Build.VERSION.SDK_INT >= 23 -> {
+            val activity = context as? androidx.fragment.app.FragmentActivity
+            activity?.shouldShowRequestPermissionRationale(permission) ?: false
+        }
+
+        else -> false
+    }
+}
+
+// Helper function to open app settings
+private fun openAppSettings(context: Context) {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = Uri.fromParts("package", context.packageName, null)
+    }
+    context.startActivity(intent)
 }
 
 fun showPhotoChooser(
@@ -720,16 +900,6 @@ private fun TextButtonRow(
     }
 }
 
-@Composable
-private fun BoxPlaceholder(height: Dp) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(height)
-            .background(MyanmarBirdsColor.current.blue_500)
-    ) {}
-}
-
 fun compressAndSaveImage(
     context: Context,
     uri: Uri
@@ -793,7 +963,7 @@ private fun AddObservationBottomSheetPreview() {
             note = "",
             onBirdNameChange = {},
             onNoteChange = {},
-            onLocationSelected = {} as (Double, Double, String) -> Unit,
+            onLocationSelected = { _, _, _ -> },
             onCancelClick = {},
             selectedDate = LocalDate.now(),
             imagePath = null,
@@ -808,6 +978,6 @@ private fun AddObservationBottomSheetPreview() {
             onFetchCurrentLoc = {},
             selectedLocName = "",
             isFetchingLocation = false
-        ) { }
+        )
     }
 }
