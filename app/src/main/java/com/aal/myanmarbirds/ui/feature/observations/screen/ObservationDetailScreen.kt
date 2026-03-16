@@ -100,7 +100,7 @@ fun ObservationScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        ObservationLabel("Location", "")
+        ObservationLabel("Location", observation.locName)
 
         Spacer(modifier = Modifier.height(8.dp))
 

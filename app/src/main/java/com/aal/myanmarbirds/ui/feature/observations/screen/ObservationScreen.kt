@@ -194,17 +194,25 @@ fun ObservationScreenContent(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Filtered observation list
+            val filteredObservations = if (uiState.selectedBodyColorFilter.isEmpty()) {
+                uiState.observations
+            } else {
+                uiState.observations.filter { it.bodyColor == uiState.selectedBodyColorFilter }
+            }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
 
-                items(uiState.observations) { observation ->
+                items(filteredObservations) { observation ->
                     val gson = Gson()
                     val observationJson = gson.toJson(observation)
 
                     ObservationItem(
                         birdName = observation.birdName,
-                        location = "San Francisco",
+                        location = observation.locName,
                         date = observation.date.toReadableDate(),
                         bodyColor = observation.bodyColor
                     ) {
