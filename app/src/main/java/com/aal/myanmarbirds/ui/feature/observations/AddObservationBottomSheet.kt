@@ -76,6 +76,7 @@ import java.io.FileOutputStream
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 
@@ -668,17 +669,18 @@ fun AddObservationBottomSheet(
 
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = selectedDate
-                .atStartOfDay(ZoneId.systemDefault())
+                .atStartOfDay(ZoneOffset.UTC)
                 .toInstant()
                 .toEpochMilli(),
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                    val todayMillis = LocalDate.now()
-                        .atStartOfDay(ZoneId.systemDefault())
-                        .toInstant()
-                        .toEpochMilli()
+                    val selectedDate = Instant.ofEpochMilli(utcTimeMillis)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
 
-                    return utcTimeMillis <= todayMillis
+                    val today = LocalDate.now()
+
+                    return !selectedDate.isAfter(today) // includes today
                 }
             }
         )
