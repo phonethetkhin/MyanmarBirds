@@ -3,6 +3,7 @@
 package com.aal.myanmarbirds.ui.feature.observations.screen
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -35,13 +37,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.rememberAsyncImagePainter
 import com.aal.myanmarbirds.ui.base.EventHandler
 import com.aal.myanmarbirds.ui.feature.components.BodyColors
 import com.aal.myanmarbirds.ui.feature.components.MBTopAppBar
@@ -79,7 +84,6 @@ fun ObservationScreen(
     }
 
     val locationState by locationViewModel.currentLocation.collectAsState()
-    Log.e("testASDF", "LocationState $locationState")
 
     LaunchedEffect(locationState) {
         locationState?.let { location ->
@@ -214,7 +218,7 @@ fun ObservationScreenContent(
                         birdName = observation.birdName,
                         location = observation.locName,
                         date = observation.date.toReadableDate(),
-                        bodyColor = observation.bodyColor
+                        imageUrl = observation.imagePath
                     ) {
                         onEvent(ObservationScreenEvent.NavigateToObservationDetail(observationJson = observationJson))
                     }
@@ -232,7 +236,7 @@ fun ObservationItem(
     birdName: String,
     location: String,
     date: String,
-    bodyColor: String,
+    imageUrl: String?,
     onClick: () -> Unit = {}
 ) {
 
@@ -255,14 +259,18 @@ fun ObservationItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Text(
-                text = bodyColor,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black
-            )
+            imageUrl?.let {
+                Image(
+                    painter = rememberAsyncImagePainter(imageUrl),
+                    contentDescription = birdName,
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
 
-            Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+            }
 
             Column(
                 modifier = Modifier.weight(1f)

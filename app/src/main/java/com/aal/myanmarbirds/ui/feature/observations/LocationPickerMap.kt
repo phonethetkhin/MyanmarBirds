@@ -1,6 +1,5 @@
 package com.aal.myanmarbirds.ui.feature.observations
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -87,7 +86,6 @@ fun LocationPickerMap(
         }
 
     val mapTilerKey = "UE0iWVkk5q3sPd9VyYbv"
-    Log.e("testASDF", "Map location set to: $mapLocation")
 
     /* ---------------- Map Lifecycle ---------------- */
 
@@ -97,7 +95,6 @@ fun LocationPickerMap(
             mapView.onStart()
             mapView.onResume()
         } catch (e: Exception) {
-            Log.e("testASDF", "Error in map lifecycle")
         }
 
         onDispose {
@@ -106,7 +103,6 @@ fun LocationPickerMap(
                 mapView.onStop()
                 mapView.onDestroy()
             } catch (e: Exception) {
-                Log.e("testASDF", "Error disposing map")
             }
         }
     }
@@ -126,18 +122,13 @@ fun LocationPickerMap(
                     .position(newPosition)
                     .title("Bird observed.")
             )
-
-            Log.e("testASDF", "Marker updated to: $newPosition")
         } catch (e: Exception) {
-            Log.e("testASDF", "Error updating marker")
         }
     }
 
     fun moveToLocation(map: MapLibreMap, location: LatLng, force: Boolean = false) {
-        Log.e("testASDF", "moveToLocation, $location, force=$force")
 
         if (!isMapReady) {
-            Log.e("testASDF", "Map not ready, skipping move")
             return
         }
 
@@ -157,11 +148,9 @@ fun LocationPickerMap(
                 500,
                 object : MapLibreMap.CancelableCallback {
                     override fun onCancel() {
-                        Log.e("testASDF", "Camera animation cancelled")
                     }
 
                     override fun onFinish() {
-                        Log.e("testASDF", "Camera animation finished")
                         val locationName =
                             getLocationName(context, location.latitude, location.longitude)
                         onLocationSelected(location.latitude, location.longitude, locationName)
@@ -169,9 +158,7 @@ fun LocationPickerMap(
                 }
             )
 
-            Log.e("testASDF", "Camera moved successfully to: $location")
         } catch (e: Exception) {
-            Log.e("testASDF", "Error moving camera: ${e.message}")
             e.printStackTrace()
         }
     }
@@ -221,33 +208,18 @@ fun LocationPickerMap(
                 }
                 true
             }
-
-            Log.e("testASDF", "Map initialized successfully at: $mapLocation")
         }
     }
 
     // Function to handle reset to current location
     fun resetToCurrentLocation() {
-        Log.e("testASDF", "resetToCurrentLocation called")
-
         if (currentLatitude != null && currentLongitude != null && isMapReady) {
             mapRef?.let { map ->
                 val location = LatLng(currentLatitude, currentLongitude)
-                Log.e("testASDF", "Moving to current location: $location")
                 moveToLocation(map, location, force = true)
             }
         }
     }
-
-    Log.e(
-        "testASDF",
-        "Current values - currentLat: $currentLatitude, currentLng: $currentLongitude"
-    )
-    Log.e(
-        "testASDF",
-        "Selected values - selectedLat: $selectedLatitude, selectedLng: $selectedLongitude"
-    )
-    Log.e("testASDF", "Map location: $mapLocation")
 
     // Effect to handle location updates
     LaunchedEffect(
@@ -257,10 +229,6 @@ fun LocationPickerMap(
         selectedLatitude,
         selectedLongitude
     ) {
-        Log.e(
-            "testASDF",
-            "LaunchedEffect triggered - isMapReady: $isMapReady"
-        )
 
         if (isMapReady) {
             // If we have a selected location, move to that

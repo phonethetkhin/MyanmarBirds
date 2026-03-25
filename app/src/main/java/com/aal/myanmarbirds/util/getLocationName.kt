@@ -38,26 +38,3 @@ fun getLocationName(context: Context, latitude: Double, longitude: Double): Stri
         "Unknown Location"
     }
 }
-
-fun debugAddressFields(context: Context, latitude: Double, longitude: Double) {
-    try {
-        val geocoder = Geocoder(context, Locale.getDefault())
-        val addresses = geocoder.getFromLocation(latitude, longitude, 1)
-        addresses?.firstOrNull()?.let { addr ->
-            Log.d("AddressDebug", "=== Full Address Details for ($latitude, $longitude) ===")
-            Log.d("AddressDebug", "getAddressLine(0): ${addr.getAddressLine(0)}")
-            Log.d("AddressDebug", "featureName: ${addr.featureName}")
-            Log.d("AddressDebug", "thoroughfare: ${addr.thoroughfare}")
-            Log.d("AddressDebug", "subThoroughfare: ${addr.subThoroughfare}")
-            Log.d("AddressDebug", "locality: ${addr.locality}")
-            Log.d("AddressDebug", "subLocality: ${addr.subLocality}")
-            Log.d("AddressDebug", "adminArea: ${addr.adminArea}")
-            Log.d("AddressDebug", "subAdminArea: ${addr.subAdminArea}")
-            Log.d("AddressDebug", "postalCode: ${addr.postalCode}")
-            Log.d("AddressDebug", "countryName: ${addr.countryName}")
-            Log.d("AddressDebug", "=========================================")
-        }
-    } catch (e: Exception) {
-        Log.e("AddressDebug", "Geocoder failed", e)
-    }
-}

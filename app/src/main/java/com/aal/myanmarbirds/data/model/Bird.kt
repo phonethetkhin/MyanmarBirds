@@ -14,6 +14,6 @@ data class Bird(
     val head: String? = null,
     val scientificName: String = "",
     val description: String = "",
-    val imageNames: List<Int>? = null,
-    val audioFileName: Int? = null
+    val imageNames: List<String>? = null,
+    val audioFileName: String? = null
 )

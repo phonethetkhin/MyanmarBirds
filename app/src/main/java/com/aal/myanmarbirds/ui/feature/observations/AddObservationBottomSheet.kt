@@ -41,12 +41,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
+import com.aal.myanmarbirds.data.model.SearchResult
 import com.aal.myanmarbirds.ui.feature.components.BodyColors
 import com.aal.myanmarbirds.ui.feature.components.SegmentedColorSelector
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdPreview
@@ -71,8 +74,14 @@ import com.aal.myanmarbirds.ui.theme.MyanmarBirdsColor
 import com.aal.myanmarbirds.ui.theme.MyanmarBirdsTypographyTokens
 import com.aal.myanmarbirds.util.clickable
 import com.aal.myanmarbirds.util.getLocationName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URL
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -402,6 +411,16 @@ fun AddObservationBottomSheet(
                     color = MyanmarBirdsColor.current.gray_100,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
+                LocationSearchBar(
+                    onLocationSelected = { lat, lng, name ->
+                        onLocationSelected(lat, lng, name)
+                    }
+                )
+
+                HorizontalDivider(
+                    color = MyanmarBirdsColor.current.gray_100,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
                 Column {
                     Text(
                         text = "Location",
@@ -434,6 +453,7 @@ fun AddObservationBottomSheet(
                     color = MyanmarBirdsColor.current.gray_100,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
+
 
                 LocationPickerMap(
                     selectedLatitude = selectedLat,
@@ -901,6 +921,8 @@ private fun TextButtonRow(
         )
     }
 }
+
+
 
 fun compressAndSaveImage(
     context: Context,

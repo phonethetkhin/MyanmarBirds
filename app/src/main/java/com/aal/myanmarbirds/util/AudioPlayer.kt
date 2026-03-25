@@ -20,17 +20,15 @@ import kotlin.math.abs
 
 class AudioPlayer(
     context: Context,
-    audioResId: Int
+    audioUrl: String
 ) {
-    // Use Media3 ExoPlayer
     private val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
         .setSeekForwardIncrementMs(10000)
         .setSeekBackIncrementMs(10000)
-        .setHandleAudioBecomingNoisy(true) // Pauses when headphones unplugged
+        .setHandleAudioBecomingNoisy(true)
         .build()
 
     private var mediaSession: MediaSession? = null
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var progressJob: Job? = null
 
@@ -47,58 +45,42 @@ class AudioPlayer(
     val buffering: StateFlow<Boolean> = _buffering
 
     init {
-        setupPlayer(context, audioResId)
+        setupPlayer(audioUrl)
         setupMediaSession(context)
     }
 
-    private fun setupPlayer(context: Context, audioResId: Int) {
-        val mediaItem = MediaItem.fromUri(
-            "android.resource://${context.packageName}/$audioResId"
-        )
-
+    private fun setupPlayer(audioUrl: String) {
+        val mediaItem = MediaItem.fromUri(audioUrl)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
 
         exoPlayer.addListener(object : Player.Listener {
+
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
-
                     Player.STATE_READY -> {
                         _duration.value = exoPlayer.duration
                         _buffering.value = false
+                        // Force normal speed when ready
+                        exoPlayer.setPlaybackSpeed(1.0f)
                     }
 
-                    Player.STATE_BUFFERING -> {
-                        _buffering.value = true
-                    }
+                    Player.STATE_BUFFERING -> _buffering.value = true
 
                     Player.STATE_ENDED -> {
-                        // 1️⃣ Stop UI state
                         _isPlaying.value = false
                         stopProgressUpdates()
-
-                        // 3️⃣ Sync UI
                         _currentTime.value = 0L
                     }
                 }
             }
 
-
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _isPlaying.value = isPlaying
-                if (isPlaying) {
-                    startProgressUpdates()
-                } else {
-                    stopProgressUpdates()
-                }
-            }
-
-            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                // Handle audio focus changes
+                if (isPlaying) startProgressUpdates() else stopProgressUpdates()
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                // Handle playback errors gracefully
                 println("Playback error: ${error.errorCodeName}")
                 _isPlaying.value = false
             }
@@ -107,22 +89,15 @@ class AudioPlayer(
 
     private fun setupMediaSession(context: Context) {
         mediaSession = MediaSession.Builder(context, exoPlayer).build()
-        // Enables background playback and media controls
     }
 
     fun playAudio() {
-        if (exoPlayer.playbackState == Player.STATE_ENDED) {
-            exoPlayer.seekTo(0)
-        }
-        if (!exoPlayer.isPlaying) {
-            exoPlayer.play()
-        }
+        if (exoPlayer.playbackState == Player.STATE_ENDED) exoPlayer.seekTo(0)
+        if (!exoPlayer.isPlaying) exoPlayer.play()
     }
 
     fun pauseAudio() {
-        if (exoPlayer.isPlaying) {
-            exoPlayer.pause()
-        }
+        if (exoPlayer.isPlaying) exoPlayer.pause()
     }
 
     fun seekToTime(timeMs: Long) {
@@ -132,32 +107,22 @@ class AudioPlayer(
     }
 
     fun setPlaybackSpeed(speed: Float) {
-        exoPlayer.playbackParameters = exoPlayer.playbackParameters
-            .withSpeed(speed.coerceIn(0.5f, 2.0f))
+        exoPlayer.setPlaybackSpeed(speed)
     }
 
     private fun startProgressUpdates() {
         stopProgressUpdates()
-
         progressJob = scope.launch {
             var lastUpdateTime = 0L
-
             while (isActive && exoPlayer.isPlaying) {
                 val currentPos = exoPlayer.currentPosition
-
-                // Update only if position changed significantly (reduces recompositions)
                 if (abs(currentPos - lastUpdateTime) > 50) {
                     _currentTime.value = currentPos
                     lastUpdateTime = currentPos
                 }
-
-                delay(100L) // Update every 100ms - smooth enough
+                delay(100L)
             }
-
-            // Final update when stopped
-            if (!exoPlayer.isPlaying) {
-                _currentTime.value = exoPlayer.currentPosition
-            }
+            if (!exoPlayer.isPlaying) _currentTime.value = exoPlayer.currentPosition
         }
     }
 
@@ -172,4 +137,9 @@ class AudioPlayer(
         mediaSession?.release()
         exoPlayer.release()
     }
+}
+
+/* ---------------- HELPER EXTENSION ---------------- */
+private fun ExoPlayer.setPlaybackSpeed(speed: Float) {
+    this.playbackParameters = this.playbackParameters.withSpeed(speed.coerceIn(0.5f, 2.0f))
 }

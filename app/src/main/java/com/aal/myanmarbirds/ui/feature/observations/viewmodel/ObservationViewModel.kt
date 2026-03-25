@@ -35,8 +35,6 @@ class ObservationViewModel @Inject constructor(
     }
 
     fun updateCurrentLocation(latitude: Double, longitude: Double) {
-        Log.e("testASDF", "updateCurrLoc Called $latitude, $longitude")
-
         updateState { currentState ->
             currentState.copy(
                 currentLatitude = latitude,

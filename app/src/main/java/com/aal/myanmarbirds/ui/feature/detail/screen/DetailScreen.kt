@@ -51,6 +51,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.aal.myanmarbirds.R
 import com.aal.myanmarbirds.data.model.Bird
 import com.aal.myanmarbirds.ui.base.EventHandler
@@ -136,10 +138,16 @@ fun DetailScreenContent(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     AsyncImage(
-                        model = images[page],
+                        model = ImageRequest.Builder(context)
+                            .data(images[page])
+                            .crossfade(true)
+                            .placeholder(R.drawable.landscape_placeholder)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build(),
                         contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+
                     )
                 }
             }
@@ -172,7 +180,6 @@ fun DetailScreenContent(
             modifier = Modifier.padding(bottom = 16.dp)
         ) {
 
-            // ✅ SHOW ONLY IF audioFileName IS NOT NULL
             bird.audioFileName?.let { fileName ->
 
                 val audioPlayer = remember(fileName) {

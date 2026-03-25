@@ -18,7 +18,6 @@ class LocationViewModel(app: Application) : AndroidViewModel(app) {
 
     @SuppressLint("MissingPermission")
     fun fetchCurrentLocation() {
-        Log.e("testASDF", "FetchLocation called")
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
             1000L

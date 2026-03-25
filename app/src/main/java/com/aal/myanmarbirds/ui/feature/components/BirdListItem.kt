@@ -20,15 +20,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.aal.myanmarbirds.R
 import com.aal.myanmarbirds.data.model.Bird
 
 @Composable
 fun BirdListItem(bird: Bird, onClick: () -> Unit) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -39,13 +44,19 @@ fun BirdListItem(bird: Bird, onClick: () -> Unit) {
 
         // Bird image
         if (!bird.imageNames.isNullOrEmpty()) {
-            Image(
-                painter = rememberAsyncImagePainter(bird.imageNames.first()),
-                contentDescription = bird.name,
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(bird.imageNames[0])
+                    .crossfade(true)
+                    .placeholder(R.drawable.landscape_placeholder)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .build(),
+                contentDescription = null,
                 modifier = Modifier
                     .size(50.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
+
             )
         } else {
             Image(
