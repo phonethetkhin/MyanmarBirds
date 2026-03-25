@@ -294,7 +294,9 @@ fun AudioPlayerUI(audioPlayer: AudioPlayer) {
     val duration by audioPlayer.duration.collectAsState()
     val buffering by audioPlayer.buffering.collectAsState()
 
-    // Use rememberSaveable to survive configuration changes
+    // Only show UI when audio is fully loaded
+    val audioReady = duration > 0L
+
     var sliderPosition by rememberSaveable { mutableFloatStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
 
@@ -308,85 +310,90 @@ fun AudioPlayerUI(audioPlayer: AudioPlayer) {
         }
     }
 
-
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        if (audioReady) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = {
+                        if (isPlaying) audioPlayer.pauseAudio()
+                        else audioPlayer.playAudio()
+                    },
+                    enabled = !buffering
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            if (isPlaying) R.drawable.pause_circle_svgrepo_com
+                            else R.drawable.play_circle_svgrepo_com
+                        ),
+                        tint = if (buffering) Color.Gray else MyanmarBirdsColor.current.play_green,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = {
-                    if (isPlaying) audioPlayer.pauseAudio()
-                    else audioPlayer.playAudio()
-                },
-                enabled = !buffering
-            ) {
-                Icon(
-                    painter = painterResource(
-                        if (isPlaying) R.drawable.pause_circle_svgrepo_com
-                        else R.drawable.play_circle_svgrepo_com
-                    ),
-                    tint = if (buffering) Color.Gray else MyanmarBirdsColor.current.play_green,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    modifier = Modifier.size(40.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    formatTime(sliderValue.toLong()),
+                    style = MyanmarBirdsTypographyTokens.Body.copy(
+                        color = MyanmarBirdsColor.current.black
+                    )
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    formatTime(duration),
+                    style = MyanmarBirdsTypographyTokens.Body.copy(
+                        color = MyanmarBirdsColor.current.black
+                    )
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Slider(
+                value = sliderValue,
+                valueRange = 0f..maxOf(1f, duration.toFloat()),
+                onValueChange = {
+                    isDragging = true
+                    sliderPosition = it
+                },
+                onValueChangeFinished = {
+                    isDragging = false
+                    audioPlayer.seekToTime(sliderPosition.toLong())
+                },
+                enabled = !buffering,
 
-            Text(
-                formatTime(sliderValue.toLong()),
-                style = MyanmarBirdsTypographyTokens.Body.copy(
-                    color = MyanmarBirdsColor.current.black
-                )
+                thumb = {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(
+                                color = MyanmarBirdsColor.current.play_green,
+                                shape = CircleShape
+                            )
+                    )
+                },
+
+                track = { sliderState ->
+                    SliderDefaults.Track(
+                        sliderState = sliderState,
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = MyanmarBirdsColor.current.play_green,
+                            inactiveTrackColor = Color.LightGray
+                        ),
+                        modifier = Modifier.height(3.dp)
+                    )
+                }
             )
-
-
-            Spacer(modifier = Modifier.weight(1f))
-
+        } else {
+            // Loading UI
             Text(
-                formatTime(duration),
+                text = "Loading audio...",
                 style = MyanmarBirdsTypographyTokens.Body.copy(
-                    color = MyanmarBirdsColor.current.black
+                    color = MyanmarBirdsColor.current.gray_800
                 )
             )
         }
-
-        Slider(
-            value = sliderValue,
-            valueRange = 0f..maxOf(1f, duration.toFloat()),
-            onValueChange = {
-                isDragging = true
-                sliderPosition = it
-            },
-            onValueChangeFinished = {
-                isDragging = false
-                audioPlayer.seekToTime(sliderPosition.toLong())
-            },
-            enabled = !buffering,
-
-            thumb = {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .background(
-                            color = MyanmarBirdsColor.current.play_green,
-                            shape = CircleShape
-                        )
-                )
-            },
-
-            track = { sliderState ->
-                SliderDefaults.Track(
-                    sliderState = sliderState,
-                    colors = SliderDefaults.colors(
-                        activeTrackColor = MyanmarBirdsColor.current.play_green,
-                        inactiveTrackColor = Color.LightGray
-                    ),
-                    modifier = Modifier.height(3.dp)
-                )
-            }
-        )
-
-
     }
 }
 
